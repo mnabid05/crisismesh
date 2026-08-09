@@ -144,9 +144,9 @@ func (i *Ingestor) fetchNWS(ctx context.Context) ([]Incident, error) {
 				Coordinates json.RawMessage `json:"coordinates"`
 			} `json:"geometry"`
 			Properties struct {
-				Event, Severity, Description, AreaDesc, Web string
-				Sent                                        time.Time
-				Ends                                        *time.Time
+				Event, Severity, Certainty, Urgency, Description, AreaDesc, Web string
+				Sent                                                            time.Time
+				Ends                                                            *time.Time
 			} `json:"properties"`
 		} `json:"features"`
 	}
@@ -162,7 +162,7 @@ func (i *Ingestor) fetchNWS(ctx context.Context) ([]Incident, error) {
 		if !ok {
 			continue
 		}
-		items = append(items, Incident{ID: "nws-" + shortID(feature.ID), ExternalID: feature.ID, Title: feature.Properties.Event, Kind: kindFromTitle(feature.Properties.Event), Severity: normalizeSeverity(feature.Properties.Severity), Status: "active", Source: "NOAA / NWS", SourceURL: feature.Properties.Web, Description: trim(feature.Properties.Description, 420), Latitude: lat, Longitude: lon, StartedAt: feature.Properties.Sent, UpdatedAt: time.Now().UTC(), Confidence: .96, Regions: splitRegions(feature.Properties.AreaDesc), Metadata: map[string]any{"expires": feature.Properties.Ends}})
+		items = append(items, Incident{ID: "nws-" + shortID(feature.ID), ExternalID: feature.ID, Title: feature.Properties.Event, Kind: kindFromTitle(feature.Properties.Event), Severity: normalizeSeverity(feature.Properties.Severity), Status: "active", Source: "NOAA / NWS", SourceURL: feature.Properties.Web, Description: trim(feature.Properties.Description, 420), Latitude: lat, Longitude: lon, StartedAt: feature.Properties.Sent, UpdatedAt: time.Now().UTC(), Confidence: .96, Regions: splitRegions(feature.Properties.AreaDesc), Metadata: map[string]any{"expires": feature.Properties.Ends, "providerSeverity": feature.Properties.Severity, "certainty": feature.Properties.Certainty, "urgency": feature.Properties.Urgency}})
 	}
 	return items, nil
 }
@@ -172,9 +172,11 @@ func (i *Ingestor) fetchUSGS(ctx context.Context) ([]Incident, error) {
 		Features []struct {
 			ID         string
 			Properties struct {
-				Mag        float64
-				Place, URL string
-				Time       int64
+				Mag          float64
+				Place, URL   string
+				Time         int64
+				Significance int `json:"sig"`
+				Tsunami      int
 			}
 			Geometry struct{ Coordinates []float64 }
 		} `json:"features"`
@@ -193,7 +195,11 @@ func (i *Ingestor) fetchUSGS(ctx context.Context) ([]Incident, error) {
 		} else if feature.Properties.Mag >= 5 {
 			severity = "high"
 		}
-		items = append(items, Incident{ID: "usgs-" + feature.ID, ExternalID: feature.ID, Title: fmt.Sprintf("M%.1f earthquake — %s", feature.Properties.Mag, feature.Properties.Place), Kind: "earthquake", Severity: severity, Status: "monitoring", Source: "USGS", SourceURL: feature.Properties.URL, Description: "Automated earthquake event from the USGS significant-event feed.", Latitude: feature.Geometry.Coordinates[1], Longitude: feature.Geometry.Coordinates[0], StartedAt: time.UnixMilli(feature.Properties.Time).UTC(), UpdatedAt: time.Now().UTC(), Confidence: .99, Regions: []string{feature.Properties.Place}, Metadata: map[string]any{"magnitude": feature.Properties.Mag}})
+		metadata := map[string]any{"magnitude": feature.Properties.Mag, "significance": feature.Properties.Significance, "tsunami": feature.Properties.Tsunami == 1}
+		if len(feature.Geometry.Coordinates) >= 3 {
+			metadata["depthKm"] = feature.Geometry.Coordinates[2]
+		}
+		items = append(items, Incident{ID: "usgs-" + feature.ID, ExternalID: feature.ID, Title: fmt.Sprintf("M%.1f earthquake — %s", feature.Properties.Mag, feature.Properties.Place), Kind: "earthquake", Severity: severity, Status: "monitoring", Source: "USGS", SourceURL: feature.Properties.URL, Description: "Automated earthquake event from the USGS significant-event feed.", Latitude: feature.Geometry.Coordinates[1], Longitude: feature.Geometry.Coordinates[0], StartedAt: time.UnixMilli(feature.Properties.Time).UTC(), UpdatedAt: time.Now().UTC(), Confidence: .99, Regions: []string{feature.Properties.Place}, Metadata: metadata})
 	}
 	return items, nil
 }
