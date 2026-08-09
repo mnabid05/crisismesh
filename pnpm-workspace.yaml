@@ -1,3 +1,8 @@
 packages:
   - apps/*
 
+# pnpm 11 blocks dependency lifecycle scripts unless they are explicitly trusted.
+# These two packages ship native binaries used by Next.js resolution and images.
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
