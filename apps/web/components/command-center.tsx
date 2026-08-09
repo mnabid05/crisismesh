@@ -64,6 +64,7 @@ export function CommandCenter({ initialData }: { initialData: DashboardData }) {
 
   return (
     <main id="top" className="command-shell">
+      <a className="skip-link" href="#operations">Skip to incident operations</a>
       <CommandHeader dataMode={initialData.dataMode} incidentCount={incidents.length} />
       <div className="status-strip"><Icon name="radio" /><span role="status" aria-live="polite">{notice}</span><i /><span>All times UTC</span><i /><span>Decision-support system · verify official guidance</span></div>
       <section className="metric-grid" aria-label="Operational summary">
@@ -72,16 +73,16 @@ export function CommandCenter({ initialData }: { initialData: DashboardData }) {
         <Metric label="Resources ready" value={String(initialData.summary.resourcesAvailable)} note={`${initialData.resources.length} asset groups`} tone="good" />
         <Metric label="Mean risk index" value={Math.round(initialData.summary.meanRiskScore).toString()} note="out of 100" />
       </section>
-      <div className="filter-row"><span>Hazard layer</span>{kinds.map((item) => <button key={item} className={kind === item ? "active" : ""} onClick={() => setKind(item)}>{item}</button>)}<span className="filter-spacer" /><span className="last-sync"><i />{initialData.streaming ? "STREAMING" : initialData.connected ? "LIVE FUSION" : "DEMO DATA"}</span></div>
-      <div className="operations-grid">
+      <div className="filter-row"><span>Hazard layer</span>{kinds.map((item) => <button type="button" key={item} className={kind === item ? "active" : ""} aria-pressed={kind === item} onClick={() => setKind(item)}>{item}</button>)}<span className="filter-spacer" /><span className="last-sync"><i />{initialData.streaming ? "STREAMING" : initialData.connected ? "LIVE FUSION" : "DEMO DATA"}</span></div>
+      <div className="operations-grid" id="operations">
         <div className="primary-column"><IncidentMap incidents={filtered} resources={initialData.resources} selectedId={selected?.id ?? ""} onSelect={setSelectedId} /><IncidentList incidents={filtered} selectedId={selected?.id ?? ""} onSelect={setSelectedId} /></div>
         <aside className="intel-column">
           {selected && <section className="incident-detail">
-            <div className="detail-top"><span className={`severity-badge ${selected.severity}`}>{selected.severity}</span><span>{selected.source}</span></div>
+            <div className="detail-top"><span className={`severity-badge ${selected.severity}`}>{selected.severity}</span>{selected.sourceUrl ? <a href={selected.sourceUrl} target="_blank" rel="noreferrer">{selected.source} ↗</a> : <span>{selected.source}</span>}</div>
             <p className="eyebrow">INCIDENT {selected.id.toUpperCase()}</p><h1>{selected.title}</h1><p className="detail-description">{selected.description}</p>
             <div className="risk-block"><div><span>OPERATIONAL RISK</span><strong>{Math.round(selected.riskScore)}</strong></div><div className="risk-track"><i style={{ width: `${selected.riskScore}%` }} /></div><small>{Math.round(selected.confidence * 100)}% source confidence</small></div>
             <dl className="detail-facts"><div><dt>Population</dt><dd>{selected.affectedPopulation.toLocaleString("en-US")}</dd></div><div><dt>Coordinates</dt><dd>{selected.latitude.toFixed(2)}, {selected.longitude.toFixed(2)}</dd></div><div><dt>Regions</dt><dd>{selected.regions.length}</dd></div></dl>
-            <button className="primary-button" onClick={deployResources} disabled={isPending}><Icon name="route" />{isPending ? "Calculating response…" : "Generate response package"}</button>
+            <button type="button" className="primary-button" onClick={deployResources} disabled={isPending}><Icon name="route" />{isPending ? "Calculating response…" : "Generate response package"}</button>
             <p className="decision-note"><Icon name="alert" />Recommendations require operator approval before dispatch.</p>
           </section>}
           {selected && <NeuralPanel incident={selected} />}

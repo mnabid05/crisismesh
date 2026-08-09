@@ -22,7 +22,7 @@ export function CommandHeader({ dataMode, incidentCount }: { dataMode: DataMode;
       <nav className="header-actions" aria-label="System status">
         <span className={`connection-state ${connected ? "online" : "scenario"}`}><i />{modeLabel[dataMode]}</span>
         <span className="incident-counter"><Icon name="alert" />{incidentCount} signals</span>
-        <button className="operator-avatar" aria-label="Operator profile">AR</button>
+        <button type="button" className="operator-avatar" aria-label="Operator profile">AR</button>
       </nav>
     </header>
   );

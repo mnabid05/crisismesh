@@ -10,7 +10,7 @@ export function IncidentMap({ incidents, resources, selectedId, onSelect }: { in
     <section className="map-panel" aria-label="Incident map">
       <div className="map-toolbar">
         <div><span className="eyebrow">COMMON OPERATING PICTURE</span><h2>Live incident field</h2></div>
-        <div className="map-tools"><button aria-label="Center map"><Icon name="locate" /></button><button aria-label="Map layers"><Icon name="layers" /></button></div>
+        <div className="map-tools"><button type="button" aria-label="Center map"><Icon name="locate" /></button><button type="button" aria-label="Map layers"><Icon name="layers" /></button></div>
       </div>
       <div className="map-canvas">
         <svg className="map-shape" viewBox="0 0 1000 600" role="img" aria-label="Simplified map of the contiguous United States">
@@ -22,7 +22,7 @@ export function IncidentMap({ incidents, resources, selectedId, onSelect }: { in
         <div className="map-label label-pacific">PACIFIC</div><div className="map-label label-atlantic">ATLANTIC</div><div className="map-label label-gulf">GULF OF MEXICO</div>
         {resources.map((resource) => <span key={resource.id} className="resource-marker" style={project(resource.latitude, resource.longitude)} title={resource.name}><Icon name="shield" /></span>)}
         {incidents.map((incident) => (
-          <button key={incident.id} className={`incident-marker ${incident.severity} ${selectedId === incident.id ? "selected" : ""}`} style={project(incident.latitude, incident.longitude)} onClick={() => onSelect(incident.id)} aria-label={`Select ${incident.title}`}>
+          <button type="button" key={incident.id} className={`incident-marker ${incident.severity} ${selectedId === incident.id ? "selected" : ""}`} aria-pressed={selectedId === incident.id} style={project(incident.latitude, incident.longitude)} onClick={() => onSelect(incident.id)} aria-label={`Select ${incident.title}`}>
             <span className="marker-pulse" /><span className="marker-core">{Math.round(incident.riskScore)}</span>
             {selectedId === incident.id && <span className="marker-label"><b>{incident.kind}</b>{incident.title}</span>}
           </button>
@@ -32,4 +32,3 @@ export function IncidentMap({ incidents, resources, selectedId, onSelect }: { in
     </section>
   );
 }
-
