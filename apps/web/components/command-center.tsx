@@ -6,6 +6,7 @@ import { CommandHeader } from "./command-header";
 import { Icon } from "./icons";
 import { IncidentList } from "./incident-list";
 import { IncidentMap } from "./incident-map";
+import { NeuralPanel } from "./neural-panel";
 import { ResourcePanel } from "./resource-panel";
 
 const kinds = ["all", "storm", "flood", "wildfire", "earthquake"];
@@ -17,11 +18,17 @@ export function CommandCenter({ initialData }: { initialData: DashboardData }) {
   const [selectedId, setSelectedId] = useState(initialData.incidents[0]?.id ?? "");
   const [kind, setKind] = useState("all");
   const [allocations, setAllocations] = useState<Allocation[]>([]);
-  const [notice, setNotice] = useState(initialData.connected ? "Live data mesh synchronized" : "Embedded response scenario loaded");
+  const [notice, setNotice] = useState(
+    initialData.dataMode === "operations"
+      ? "Live operations mesh synchronized"
+      : initialData.dataMode === "live-fusion"
+        ? "NASA and weather neural fusion synchronized"
+        : "Embedded response scenario loaded",
+  );
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!initialData.connected) return;
+    if (!initialData.streaming) return;
     const stream = new EventSource(`${apiUrl}/api/v1/stream`);
     stream.addEventListener("update", (message) => {
       try {
@@ -34,7 +41,7 @@ export function CommandCenter({ initialData }: { initialData: DashboardData }) {
     });
     stream.onerror = () => setNotice("Live stream reconnecting");
     return () => stream.close();
-  }, [initialData.connected]);
+  }, [initialData.streaming]);
 
   const filtered = useMemo(() => kind === "all" ? incidents : incidents.filter((item) => item.kind === kind), [incidents, kind]);
   const selected = incidents.find((item) => item.id === selectedId) ?? incidents[0];
@@ -42,9 +49,9 @@ export function CommandCenter({ initialData }: { initialData: DashboardData }) {
   async function deployResources() {
     if (!selected) return;
     startTransition(async () => {
-      if (!initialData.connected) {
+      if (initialData.dataMode !== "operations") {
         const simulated = initialData.resources.slice(0, 3).map((resource, index): Allocation => ({ id: `scenario-${index}`, incidentId: selected.id, resourceId: resource.id, units: Math.min(resource.available, 4 + index), etaSeconds: 2100 + index * 900, distanceKm: 82 + index * 74, suitability: 0.91 - index * 0.09, rationale: "Scenario-mode capability and proximity match.", status: "proposed", createdAt: new Date().toISOString() }));
-        setAllocations(simulated); setNotice("Response package simulated · 3 assets matched"); return;
+        setAllocations(simulated); setNotice("Advisory response package generated · 3 assets matched"); return;
       }
       try {
         const response = await fetch(`${apiUrl}/api/v1/allocations`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ incidentId: selected.id }) });
@@ -57,7 +64,7 @@ export function CommandCenter({ initialData }: { initialData: DashboardData }) {
 
   return (
     <main id="top" className="command-shell">
-      <CommandHeader connected={initialData.connected} incidentCount={incidents.length} />
+      <CommandHeader dataMode={initialData.dataMode} incidentCount={incidents.length} />
       <div className="status-strip"><Icon name="radio" /><span role="status" aria-live="polite">{notice}</span><i /><span>All times UTC</span><i /><span>Decision-support system · verify official guidance</span></div>
       <section className="metric-grid" aria-label="Operational summary">
         <Metric label="Active incidents" value={String(initialData.summary.activeIncidents).padStart(2, "0")} note={`${initialData.summary.criticalIncidents} critical`} tone="danger" />
@@ -65,7 +72,7 @@ export function CommandCenter({ initialData }: { initialData: DashboardData }) {
         <Metric label="Resources ready" value={String(initialData.summary.resourcesAvailable)} note={`${initialData.resources.length} asset groups`} tone="good" />
         <Metric label="Mean risk index" value={Math.round(initialData.summary.meanRiskScore).toString()} note="out of 100" />
       </section>
-      <div className="filter-row"><span>Hazard layer</span>{kinds.map((item) => <button key={item} className={kind === item ? "active" : ""} onClick={() => setKind(item)}>{item}</button>)}<span className="filter-spacer" /><span className="last-sync"><i />{initialData.connected ? "STREAMING" : "DEMO DATA"}</span></div>
+      <div className="filter-row"><span>Hazard layer</span>{kinds.map((item) => <button key={item} className={kind === item ? "active" : ""} onClick={() => setKind(item)}>{item}</button>)}<span className="filter-spacer" /><span className="last-sync"><i />{initialData.streaming ? "STREAMING" : initialData.connected ? "LIVE FUSION" : "DEMO DATA"}</span></div>
       <div className="operations-grid">
         <div className="primary-column"><IncidentMap incidents={filtered} resources={initialData.resources} selectedId={selected?.id ?? ""} onSelect={setSelectedId} /><IncidentList incidents={filtered} selectedId={selected?.id ?? ""} onSelect={setSelectedId} /></div>
         <aside className="intel-column">
@@ -77,11 +84,12 @@ export function CommandCenter({ initialData }: { initialData: DashboardData }) {
             <button className="primary-button" onClick={deployResources} disabled={isPending}><Icon name="route" />{isPending ? "Calculating response…" : "Generate response package"}</button>
             <p className="decision-note"><Icon name="alert" />Recommendations require operator approval before dispatch.</p>
           </section>}
+          {selected && <NeuralPanel incident={selected} />}
           <ResourcePanel resources={initialData.resources} allocations={allocations} />
           <section className="source-panel"><div className="section-heading"><div><span className="eyebrow">DATA MESH</span><h2>Source health</h2></div><Icon name="activity" /></div>{initialData.summary.sources.map((source) => <div className="source-row" key={source.name}><span><i className={source.status} />{source.name}</span><b>{source.lagSeconds}s</b></div>)}</section>
         </aside>
       </div>
-      <footer><span>CRISIS<span>MESH</span> / OPEN RESPONSE INFRASTRUCTURE</span><span>NASA EONET · NOAA/NWS · USGS</span><span>v0.1.0</span></footer>
+      <footer><span>CRISIS<span>MESH</span> / OPEN RESPONSE INFRASTRUCTURE</span><span>NASA EONET · NASA POWER · NOAA/NWS · USGS</span><span>v0.2.0</span></footer>
     </main>
   );
 }
