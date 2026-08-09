@@ -1,6 +1,6 @@
 # CrisisMesh
 
-Real-time disaster intelligence and response coordination. CrisisMesh turns NASA EONET, NOAA/NWS alerts, and USGS earthquake feeds into a shared incident picture, assigns transparent operational risk, and recommends deployable response assets.
+Real-time disaster intelligence and response coordination. CrisisMesh turns NASA EONET, NASA POWER meteorology, NOAA/NWS alerts, Open-Meteo forecasts, and USGS earthquake feeds into a shared incident picture, assigns transparent operational risk, and recommends deployable response assets.
 
 > CrisisMesh is a decision-support portfolio project. It is not an official warning service, evacuation authority, or replacement for local emergency management guidance.
 
@@ -9,6 +9,7 @@ Real-time disaster intelligence and response coordination. CrisisMesh turns NASA
 - Three-language system: Go for concurrent ingestion and APIs, Python for explainable scoring and optimization, TypeScript/Next.js for the command interface.
 - Live external integrations with normalization, deduplication, timeouts, and source-aware fallbacks.
 - PostGIS spatial persistence, NATS event distribution, Server-Sent Events, and a capacity-aware allocation engine.
+- Reproducible 18-input neural risk model with provider caching, local feature-ablation explanations, a FastAPI runtime, and an explicit model card.
 - Reproducible local deployment through Docker Compose and production-oriented Kubernetes packaging through Helm.
 - CI, CodeQL, Trivy, SBOM/provenance-enabled releases, atomic deployments, HPA, disruption budgets, and default-deny network policy.
 - Prometheus metrics, Grafana dashboard, health probes, structured logs, and a k6 load profile.
@@ -18,15 +19,17 @@ Real-time disaster intelligence and response coordination. CrisisMesh turns NASA
 ```mermaid
 flowchart LR
   subgraph Sources
-    E["NASA EONET"]
+    E["NASA EONET + POWER"]
     N["NOAA / NWS"]
     U["USGS"]
+    M["Open-Meteo"]
   end
   E & N & U --> I["Go ingestor"]
   I --> A["Go operations API"]
   A <--> P[("PostgreSQL + PostGIS")]
   A <--> B["NATS event mesh"]
-  A <--> R["Python intelligence"]
+  A <--> R["Python neural intelligence"]
+  E & M --> R
   A -->|"REST + SSE"| W["Next.js command center"]
   A & R --> O["Prometheus / Grafana"]
 ```
@@ -87,6 +90,9 @@ helm upgrade --install crisismesh deploy/helm/crisismesh \
 ```
 
 See the [operations runbook](docs/runbook.md), [threat model](docs/threat-model.md), and [delivery roadmap](docs/commit-roadmap.md).
+
+The experimental neural system is documented in the [model card](docs/model-card.md), including its synthetic training disclosure and validation requirements.
+The public web and neural services deployment flow is documented in the [Vercel deployment guide](docs/deployment-vercel.md).
 
 ## Measurable portfolio targets
 

@@ -26,3 +26,12 @@ func TestNormalizeKind(t *testing.T) {
 		}
 	}
 }
+
+func TestNormalizeSeverity(t *testing.T) {
+	cases := map[string]string{"Extreme": "critical", "Severe": "high", "Moderate": "moderate", "Minor": "low"}
+	for input, want := range cases {
+		if got := normalizeSeverity(input); got != want {
+			t.Fatalf("%q: got %q want %q", input, got, want)
+		}
+	}
+}

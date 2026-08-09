@@ -20,7 +20,7 @@ The API owns incident and resource lifecycle, validation, persistence, write aut
 
 ### Intelligence — Python
 
-The intelligence service is intentionally deterministic and explainable. Its risk model exposes contributing signals. Its allocator ranks available assets by capability coverage, great-circle distance, and capacity. The standard-library server minimizes supply-chain and cold-start overhead; the scoring modules are transport-independent.
+The intelligence service supports both the original deterministic scorer and an experimental neural fusion path. The neural path combines normalized incident features with cached Open-Meteo forecast data and NASA POWER daily meteorology, then exposes local feature-ablation explanations. A FastAPI entrypoint supports serverless deployment while the standard-library server remains available for containers. Its allocator ranks available assets by capability coverage, great-circle distance, and capacity.
 
 ### Command center — TypeScript / Next.js
 
@@ -54,8 +54,8 @@ Spatial indexes support proximity searches. Priority indexes support the main in
 
 ## Deliberate limitations
 
-- Population exposure is provider/operator supplied; the MVP does not intersect official census rasters.
+- Population exposure is provider/operator supplied or explicitly modeled; the platform does not intersect official census rasters.
+- The neural artifact is trained on synthetic scenarios and is a systems demonstration, not an operationally validated forecast.
 - The simplified frontend map avoids a commercial token. A production iteration should use MapLibre with hosted vector tiles.
 - Authentication is an API-key boundary for machine writes. Human multi-tenant OIDC/RBAC is part of the roadmap.
 - No recommendation causes real dispatch; that requires agency integration, policy, auditing, and formal validation.
-

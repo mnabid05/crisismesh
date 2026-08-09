@@ -1,5 +1,35 @@
 export type Severity = "critical" | "high" | "moderate" | "low";
 export type IncidentStatus = "active" | "monitoring" | "contained";
+export type DataMode = "operations" | "live-fusion" | "scenario";
+
+export interface NeuralSignal {
+  feature: string;
+  impact: number;
+  direction: "raises" | "reduces";
+}
+
+export interface EnvironmentSnapshot {
+  temperature_c: number;
+  precipitation_mm: number;
+  wind_speed_kph: number;
+  wind_gust_kph: number;
+  humidity_percent: number;
+  cape_jkg: number;
+  power_temperature_c: number;
+  power_precipitation_mm: number;
+  power_wind_speed_ms: number;
+  forecast_source: string;
+  climate_source: string;
+}
+
+export interface NeuralInsight {
+  probability: number;
+  modelVersion: string;
+  modelKind: string;
+  topSignals: NeuralSignal[];
+  environment: EnvironmentSnapshot;
+  disclaimer: string;
+}
 
 export interface Incident {
   id: string;
@@ -19,6 +49,7 @@ export interface Incident {
   confidence: number;
   affectedPopulation: number;
   regions: string[];
+  intelligence?: NeuralInsight;
 }
 
 export interface Resource {
@@ -70,5 +101,6 @@ export interface DashboardData {
   resources: Resource[];
   summary: Summary;
   connected: boolean;
+  streaming: boolean;
+  dataMode: DataMode;
 }
-

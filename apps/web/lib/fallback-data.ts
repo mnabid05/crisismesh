@@ -5,6 +5,8 @@ const ago = (minutes: number) => new Date(now.getTime() - minutes * 60_000).toIS
 
 export const fallbackData: DashboardData = {
   connected: false,
+  streaming: false,
+  dataMode: "scenario",
   incidents: [
     { id: "cm-atlantic-07", title: "Atlantic tropical cyclone watch", kind: "storm", severity: "critical", status: "active", source: "NASA EONET", description: "Rapidly organizing tropical system with coastal flood potential. Emergency managers are reviewing shelter capacity across two counties.", latitude: 26.7, longitude: -74.2, startedAt: ago(540), updatedAt: ago(3), riskScore: 91, confidence: 0.88, affectedPopulation: 184000, regions: ["Broward County", "Miami-Dade"] },
     { id: "cm-gulf-22", title: "Flash flood emergency", kind: "flood", severity: "high", status: "active", source: "NOAA / NWS", description: "Training thunderstorms producing life-threatening flash flooding across low-lying corridors.", latitude: 29.8, longitude: -95.4, startedAt: ago(240), updatedAt: ago(1), riskScore: 84, confidence: 0.96, affectedPopulation: 73000, regions: ["Harris County"] },
@@ -34,4 +36,3 @@ export const fallbackData: DashboardData = {
     generatedAt: now.toISOString(),
   },
 };
-
