@@ -9,12 +9,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from .allocation import allocate
+from .features import EnvironmentalSignals
 from .models import Incident, Resource
 from .risk import score_incident
+from .service import NeuralIntelligenceService
 
 logging.basicConfig(level=logging.INFO, format='{"level":"%(levelname)s","message":"%(message)s"}')
 LOGGER = logging.getLogger("crisismesh.intelligence")
-METRICS = {"requests": 0, "errors": 0, "scores": 0, "allocations": 0}
+METRICS = {"requests": 0, "errors": 0, "scores": 0, "neural_scores": 0, "allocations": 0}
+NEURAL = NeuralIntelligenceService()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -44,6 +47,16 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/v1/risk/score":
                 METRICS["scores"] += 1
                 self.respond(HTTPStatus.OK, score_incident(Incident.from_dict(body)))
+            elif self.path == "/v1/neural/score":
+                METRICS["neural_scores"] += 1
+                incident = Incident.from_dict(body.get("incident", body))
+                environment_payload = body.get("environment")
+                environment = (
+                    EnvironmentalSignals(**environment_payload)
+                    if isinstance(environment_payload, dict)
+                    else None
+                )
+                self.respond(HTTPStatus.OK, NEURAL.score(incident, environment))
             elif self.path == "/v1/allocate":
                 incident = Incident.from_dict(body.get("incident") or {})
                 resources = [Resource.from_dict(item) for item in body.get("resources", [])]
