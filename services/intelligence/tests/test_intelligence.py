@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
 import unittest
+from datetime import UTC, datetime
 
 from app.allocation import allocate, haversine_km
 from app.models import Incident, Resource
@@ -18,7 +18,7 @@ class IntelligenceTests(unittest.TestCase):
             longitude=-95.37,
             confidence=0.95,
             affected_population=80_000,
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
 
     def test_risk_score_is_bounded_and_explainable(self) -> None:
@@ -32,7 +32,16 @@ class IntelligenceTests(unittest.TestCase):
 
     def test_allocator_prefers_capability_match(self) -> None:
         resources = [
-            Resource("good", "Swift Water", "rescue", "ready", 10, 30, -95, ["swift-water", "medical"]),
+            Resource(
+                "good",
+                "Swift Water",
+                "rescue",
+                "ready",
+                10,
+                30,
+                -95,
+                ["swift-water", "medical"],
+            ),
             Resource("weak", "Supply", "logistics", "ready", 10, 30, -95, ["cargo"]),
         ]
         result = allocate(self.incident, resources)
@@ -42,4 +51,3 @@ class IntelligenceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

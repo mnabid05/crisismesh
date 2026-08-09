@@ -49,14 +49,21 @@ class Handler(BaseHTTPRequestHandler):
                 resources = [Resource.from_dict(item) for item in body.get("resources", [])]
                 allocations = allocate(incident, resources)
                 METRICS["allocations"] += len(allocations)
-                self.respond(HTTPStatus.OK, {"allocations": allocations, "modelVersion": "allocator-v1.0"})
+                self.respond(
+                    HTTPStatus.OK,
+                    {"allocations": allocations, "modelVersion": "allocator-v1.0"},
+                )
             else:
                 self.respond(HTTPStatus.NOT_FOUND, {"error": {"code": "not_found"}})
         except (ValueError, TypeError, json.JSONDecodeError) as exc:
             METRICS["errors"] += 1
-            self.respond(HTTPStatus.BAD_REQUEST, {"error": {"code": "invalid_request", "message": str(exc)}})
+            self.respond(
+                HTTPStatus.BAD_REQUEST,
+                {"error": {"code": "invalid_request", "message": str(exc)}},
+            )
         finally:
-            LOGGER.info("request path=%s duration_ms=%.2f", self.path, (time.perf_counter() - started) * 1000)
+            duration_ms = (time.perf_counter() - started) * 1000
+            LOGGER.info("request path=%s duration_ms=%.2f", self.path, duration_ms)
 
     def read_json(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
@@ -95,4 +102,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

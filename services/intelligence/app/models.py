@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -32,7 +32,7 @@ class Incident:
         try:
             parsed = datetime.fromisoformat(str(started).replace("Z", "+00:00"))
         except (TypeError, ValueError):
-            parsed = datetime.now(timezone.utc)
+            parsed = datetime.now(UTC)
         return cls(
             id=str(data.get("id", "unknown")),
             title=str(data.get("title", "Untitled incident")),
@@ -71,4 +71,3 @@ class Resource:
             longitude=number(data, "longitude"),
             capabilities=[str(item) for item in data.get("capabilities", [])],
         )
-

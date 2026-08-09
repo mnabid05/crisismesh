@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .models import Incident
 
@@ -19,10 +19,10 @@ SEVERITY_DELTA = {"low": -12, "moderate": 0, "high": 14, "critical": 24}
 
 def score_incident(incident: Incident, now: datetime | None = None) -> dict[str, object]:
     """Return a transparent 0-100 operational risk score, not a safety forecast."""
-    current = now or datetime.now(timezone.utc)
+    current = now or datetime.now(UTC)
     started = incident.started_at
     if started.tzinfo is None:
-        started = started.replace(tzinfo=timezone.utc)
+        started = started.replace(tzinfo=UTC)
     age_hours = max(0.0, (current - started).total_seconds() / 3600)
     population_signal = min(18.0, math.log10(max(1, incident.affected_population)) * 3.2)
     recency_signal = max(0.0, 8.0 - min(age_hours, 96.0) / 12.0)
@@ -40,7 +40,14 @@ def score_incident(incident: Incident, now: datetime | None = None) -> dict[str,
         + magnitude_signal
     )
     score = round(max(1.0, min(99.0, raw)), 1)
-    severity = "critical" if score >= 85 else "high" if score >= 70 else "moderate" if score >= 45 else "low"
+    if score >= 85:
+        severity = "critical"
+    elif score >= 70:
+        severity = "high"
+    elif score >= 45:
+        severity = "moderate"
+    else:
+        severity = "low"
     confidence = round(max(0.45, min(0.99, incident.confidence * 0.75 + 0.2)), 2)
     return {
         "riskScore": score,
@@ -54,6 +61,7 @@ def score_incident(incident: Incident, now: datetime | None = None) -> dict[str,
             "magnitude": round(magnitude_signal, 1),
         },
         "modelVersion": "rules-v1.0",
-        "disclaimer": "Operational prioritization aid; not an official forecast or evacuation order.",
+        "disclaimer": (
+            "Operational prioritization aid; not an official forecast or evacuation order."
+        ),
     }
-
