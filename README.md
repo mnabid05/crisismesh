@@ -92,6 +92,7 @@ helm upgrade --install crisismesh deploy/helm/crisismesh \
 See the [operations runbook](docs/runbook.md), [threat model](docs/threat-model.md), and [delivery roadmap](docs/commit-roadmap.md).
 
 The experimental neural system is documented in the [model card](docs/model-card.md), including its synthetic training disclosure and validation requirements.
+The public web and neural services deployment flow is documented in the [Vercel deployment guide](docs/deployment-vercel.md).
 
 ## Measurable portfolio targets
 
