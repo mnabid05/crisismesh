@@ -1,0 +1,103 @@
+name: crisismesh
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/web.Dockerfile
+    environment:
+      API_INTERNAL_URL: http://api:8080
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    ports: ["3000:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/api.Dockerfile
+    environment:
+      API_PORT: 8080
+      INTELLIGENCE_URL: http://intelligence:8090
+      DATABASE_URL: postgres://crisismesh:crisismesh@postgres:5432/crisismesh?sslmode=disable
+      NATS_URL: nats://nats:4222
+      ALLOW_ORIGINS: http://localhost:3000
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      intelligence: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  ingestor:
+    build:
+      context: .
+      dockerfile: deploy/docker/ingestor.Dockerfile
+    environment:
+      API_URL: http://api:8080
+      NWS_USER_AGENT: ${NWS_USER_AGENT:-CrisisMesh/0.1 portfolio@example.com}
+      INGEST_INTERVAL: ${INGEST_INTERVAL:-300s}
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+
+  intelligence:
+    build:
+      context: .
+      dockerfile: deploy/docker/intelligence.Dockerfile
+    ports: ["8090:8090"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  postgres:
+    image: postgis/postgis:17-3.5-alpine
+    environment:
+      POSTGRES_DB: crisismesh
+      POSTGRES_USER: crisismesh
+      POSTGRES_PASSWORD: crisismesh
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crisismesh -d crisismesh"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redisdata:/data"]
+    ports: ["6379:6379"]
+
+  nats:
+    image: nats:2.11-alpine
+    command: ["-js", "-m", "8222"]
+    ports: ["4222:4222", "8222:8222"]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    volumes:
+      - ./deploy/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: crisismesh
+    ports: ["3001:3000"]
+
+volumes:
+  pgdata:
+  redisdata:
+

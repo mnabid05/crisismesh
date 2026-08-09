@@ -1,0 +1,14 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    { "type": "stat", "title": "API requests", "targets": [{ "expr": "crisismesh_http_requests_total" }], "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 } },
+    { "type": "stat", "title": "Ingested incidents", "targets": [{ "expr": "crisismesh_incidents_ingested_total" }], "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 } },
+    { "type": "stat", "title": "Allocation recommendations", "targets": [{ "expr": "crisismesh_intelligence_allocations_total" }], "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 } }
+  ],
+  "schemaVersion": 41,
+  "tags": ["crisismesh"],
+  "title": "CrisisMesh / Operations Overview",
+  "uid": "crisismesh-overview"
+}
+

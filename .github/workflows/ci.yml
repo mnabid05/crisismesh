@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.16.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @crisismesh/web lint
+      - run: pnpm --filter @crisismesh/web typecheck
+      - run: pnpm --filter @crisismesh/web build
+
+  go:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: { service: [api, ingestor] }
+    defaults: { run: { working-directory: services/${{ matrix.service }} } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.26.5", cache-dependency-path: services/${{ matrix.service }}/go.sum }
+      - run: go mod download
+      - run: gofmt -d . | tee /tmp/gofmt.diff && test ! -s /tmp/gofmt.diff
+      - run: go vet ./...
+      - run: go test -race -coverprofile=coverage.out ./...
+      - run: go build ./...
+
+  python:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: services/intelligence } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.14" }
+      - run: python -m pip install ruff
+      - run: python -m ruff check .
+      - run: python -m unittest discover -s tests -v
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint deploy/helm/crisismesh --set secrets.databaseUrl=postgres://test --set secrets.apiKey=test
+      - run: helm template test deploy/helm/crisismesh --set secrets.databaseUrl=postgres://test --set secrets.apiKey=test > rendered.yaml
+      - uses: yokawasa/action-setup-kube-tools@v0.11.2
+        with: { kubeconform: "0.6.7" }
+      - run: kubeconform -strict -summary -ignore-missing-schemas rendered.yaml

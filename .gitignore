@@ -1,0 +1,16 @@
+.env
+.DS_Store
+node_modules/
+.next/
+coverage/
+dist/
+bin/
+*.log
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+*.pyc
+*.tsbuildinfo
+services/ingestor/ingestor
+deploy/helm/crisismesh/charts/

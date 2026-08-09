@@ -1,0 +1,17 @@
+[project]
+name = "crisismesh-intelligence"
+version = "0.1.0"
+description = "Explainable disaster risk scoring and resource allocation"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["ruff>=0.12"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+

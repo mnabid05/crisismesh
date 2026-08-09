@@ -1,0 +1,68 @@
+nameOverride: ""
+fullnameOverride: ""
+
+global:
+  imageRegistry: ghcr.io/crisismesh
+  imagePullPolicy: IfNotPresent
+
+images:
+  web: { repository: web, tag: "0.1.0" }
+  api: { repository: api, tag: "0.1.0" }
+  ingestor: { repository: ingestor, tag: "0.1.0" }
+  intelligence: { repository: intelligence, tag: "0.1.0" }
+
+replicas:
+  web: 2
+  api: 3
+  ingestor: 1
+  intelligence: 2
+
+resources:
+  web: { requests: { cpu: 100m, memory: 128Mi }, limits: { cpu: 500m, memory: 512Mi } }
+  api: { requests: { cpu: 100m, memory: 128Mi }, limits: { cpu: "1", memory: 512Mi } }
+  ingestor: { requests: { cpu: 50m, memory: 64Mi }, limits: { cpu: 300m, memory: 256Mi } }
+  intelligence: { requests: { cpu: 100m, memory: 128Mi }, limits: { cpu: "1", memory: 512Mi } }
+
+config:
+  environment: production
+  allowedOrigins: https://crisismesh.example.com
+  ingestInterval: 300s
+  nwsUserAgent: CrisisMesh/0.1 operations@example.com
+  natsUrl: nats://nats.messaging.svc.cluster.local:4222
+  intelligenceUrl: http://crisismesh-intelligence:8090
+  publicApiUrl: https://api.crisismesh.example.com
+
+secrets:
+  databaseUrl: ""
+  apiKey: ""
+
+service:
+  web: { port: 3000 }
+  api: { port: 8080 }
+  intelligence: { port: 8090 }
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  webHost: crisismesh.example.com
+  apiHost: api.crisismesh.example.com
+  tls: []
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 65
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+

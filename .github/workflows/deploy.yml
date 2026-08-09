@@ -1,0 +1,41 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      imageTag: { description: "Immutable image tag", required: true, type: string }
+      environment: { description: "Target environment", required: true, type: choice, options: [staging, production], default: staging }
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions: { contents: read }
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-helm@v4
+      - run: mkdir -p "$HOME/.kube" && printf '%s' "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config" && chmod 600 "$HOME/.kube/config"
+        env: { KUBE_CONFIG: "${{ secrets.KUBE_CONFIG }}" }
+      - name: Atomic Helm deployment
+        run: |
+          helm upgrade --install crisismesh deploy/helm/crisismesh \
+            --namespace crisismesh --create-namespace --atomic --timeout 8m \
+            --set-string images.web.tag="$IMAGE_TAG" \
+            --set-string images.api.tag="$IMAGE_TAG" \
+            --set-string images.ingestor.tag="$IMAGE_TAG" \
+            --set-string images.intelligence.tag="$IMAGE_TAG" \
+            --set-string secrets.databaseUrl="$DATABASE_URL" \
+            --set-string secrets.apiKey="$API_KEY"
+        env:
+          IMAGE_TAG: ${{ inputs.imageTag }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          API_KEY: ${{ secrets.CRISISMESH_API_KEY }}
+      - run: kubectl rollout status deployment/crisismesh-api -n crisismesh --timeout=3m
+      - run: kubectl rollout status deployment/crisismesh-web -n crisismesh --timeout=3m
+
