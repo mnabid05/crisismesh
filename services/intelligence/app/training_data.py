@@ -246,8 +246,7 @@ def chronological_split(
 
 def write_jsonl(path: Path, examples: Iterable[TrainingExample]) -> str:
     lines = [
-        json.dumps(example.to_dict(), separators=(",", ":"), sort_keys=True)
-        for example in examples
+        json.dumps(example.to_dict(), separators=(",", ":"), sort_keys=True) for example in examples
     ]
     content = "\n".join(lines) + ("\n" if lines else "")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -291,8 +290,10 @@ def _noaa_timestamp(value: object) -> datetime | None:
 
 
 def _valid_coordinates(latitude: float, longitude: float) -> bool:
-    return -90.0 <= latitude <= 90.0 and -180.0 <= longitude <= 180.0 and not (
-        math.isclose(latitude, 0.0) and math.isclose(longitude, 0.0)
+    return (
+        -90.0 <= latitude <= 90.0
+        and -180.0 <= longitude <= 180.0
+        and not (math.isclose(latitude, 0.0) and math.isclose(longitude, 0.0))
     )
 
 

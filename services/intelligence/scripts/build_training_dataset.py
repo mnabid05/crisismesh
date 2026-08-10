@@ -81,6 +81,31 @@ def collect_noaa(years: list[int]) -> tuple[list[TrainingExample], list[DatasetS
     return examples, sources
 
 
+def collect_noaa_archives(
+    paths: list[Path],
+) -> tuple[list[TrainingExample], list[DatasetSource]]:
+    examples: list[TrainingExample] = []
+    sources: list[DatasetSource] = []
+    for path in paths:
+        archive = path.read_bytes()
+        url = f"{NOAA_INDEX}{path.name}"
+        records = parse_noaa_csv(
+            gzip.decompress(archive).decode("utf-8-sig", errors="replace"),
+            source_url=url,
+        )
+        examples.extend(records)
+        sources.append(
+            DatasetSource(
+                name="NOAA Storm Events",
+                url=url,
+                sha256=content_digest(archive),
+                records=len(records),
+                collected_at=datetime.now(UTC).isoformat(),
+            )
+        )
+    return examples, sources
+
+
 def collect_usgs(years: list[int]) -> tuple[list[TrainingExample], list[DatasetSource]]:
     examples: list[TrainingExample] = []
     sources: list[DatasetSource] = []
@@ -106,6 +131,42 @@ def collect_usgs(years: list[int]) -> tuple[list[TrainingExample], list[DatasetS
             DatasetSource(
                 name="USGS Earthquake Catalog",
                 url=url,
+                sha256=content_digest(content),
+                records=len(records),
+                collected_at=datetime.now(UTC).isoformat(),
+            )
+        )
+    return examples, sources
+
+
+def collect_usgs_files(
+    paths: list[Path],
+) -> tuple[list[TrainingExample], list[DatasetSource]]:
+    examples: list[TrainingExample] = []
+    sources: list[DatasetSource] = []
+    for path in paths:
+        content = path.read_bytes()
+        payload = json.loads(content)
+        if not isinstance(payload, dict):
+            raise ValueError(f"{path} contains a non-object USGS response")
+        records = usgs_examples(payload)
+        examples.extend(records)
+        year_match = re.search(r"(20\d{2})", path.name)
+        year = int(year_match.group(1)) if year_match else 2025
+        query = urlencode(
+            {
+                "format": "geojson",
+                "starttime": f"{year}-01-01",
+                "endtime": f"{year + 1}-01-01",
+                "minmagnitude": 4.0,
+                "orderby": "time-asc",
+                "limit": 20000,
+            }
+        )
+        sources.append(
+            DatasetSource(
+                name="USGS Earthquake Catalog",
+                url=f"{USGS_QUERY}?{query}",
                 sha256=content_digest(content),
                 records=len(records),
                 collected_at=datetime.now(UTC).isoformat(),
@@ -171,6 +232,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build a versioned CrisisMesh training dataset")
     parser.add_argument("--noaa-years", nargs="+", type=int, default=[2023, 2024, 2025])
     parser.add_argument("--usgs-years", nargs="+", type=int, default=[2023, 2024, 2025])
+    parser.add_argument("--noaa-archive", nargs="+", type=Path)
+    parser.add_argument("--usgs-json", nargs="+", type=Path)
     parser.add_argument("--maximum-per-source-hazard", type=int, default=6000)
     parser.add_argument(
         "--output-dir",
@@ -179,8 +242,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    noaa, noaa_sources = collect_noaa(args.noaa_years)
-    usgs, usgs_sources = collect_usgs(args.usgs_years)
+    noaa, noaa_sources = (
+        collect_noaa_archives(args.noaa_archive)
+        if args.noaa_archive
+        else collect_noaa(args.noaa_years)
+    )
+    usgs, usgs_sources = (
+        collect_usgs_files(args.usgs_json) if args.usgs_json else collect_usgs(args.usgs_years)
+    )
     examples = balanced_examples(
         [*noaa, *usgs],
         maximum_per_source_hazard=args.maximum_per_source_hazard,
