@@ -32,6 +32,15 @@ export interface NeuralInsight {
   horizons?: PredictionHorizon[];
   target?: string;
   provenance?: { training: string[]; runtime: string[] };
+  trajectory?: "rising" | "steady";
+  confidenceLabel?: string;
+  providerCoverage?: {
+    available: number;
+    expected: number;
+    ratio: number;
+    sources: string[];
+    missing: string[];
+  };
 }
 
 export interface PredictionHorizon {

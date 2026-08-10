@@ -62,6 +62,9 @@ interface PredictionResponse extends NeuralInsight {
   confidence: number;
   horizons: NonNullable<NeuralInsight["horizons"]>;
   provenance: NonNullable<NeuralInsight["provenance"]>;
+  trajectory: NonNullable<NeuralInsight["trajectory"]>;
+  confidenceLabel: string;
+  providerCoverage: NonNullable<NeuralInsight["providerCoverage"]>;
 }
 
 async function fetchJSON<T>(url: string, headers: HeadersInit = {}): Promise<T> {
@@ -252,6 +255,9 @@ async function addNeuralScore(incident: Incident): Promise<Incident> {
         horizons: neural.horizons,
         target: neural.target,
         provenance: neural.provenance,
+        trajectory: neural.trajectory,
+        confidenceLabel: neural.confidenceLabel,
+        providerCoverage: neural.providerCoverage,
       },
     };
   } catch {
