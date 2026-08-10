@@ -16,7 +16,7 @@ class FastApiTests(unittest.TestCase):
         response = self.client.get("/healthz")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["modelVersion"], "neural-escalation-v2.0.0")
+        self.assertEqual(response.json()["modelVersion"], "neural-demand-v3.0.0")
 
     def test_neural_score_accepts_environment_override(self) -> None:
         response = self.client.post(
@@ -103,6 +103,54 @@ class FastApiTests(unittest.TestCase):
         providers = response.json()["providers"]
         self.assertEqual({item["name"] for item in providers}, {"Open-Meteo", "NASA POWER"})
         self.assertTrue(all(item["timeoutSeconds"] > 0 for item in providers))
+
+    def test_v3_demand_returns_one_window_and_inventory_gaps(self) -> None:
+        response = self.client.post(
+            "/v3/demand",
+            json={
+                "incident": {
+                    "id": "demand-1",
+                    "title": "Observed flood",
+                    "kind": "flood",
+                    "severity": "high",
+                    "status": "active",
+                    "latitude": 29.76,
+                    "longitude": -95.37,
+                    "confidence": 0.95,
+                    "affectedPopulation": 75000,
+                    "startedAt": datetime.now(UTC).isoformat(),
+                },
+                "environment": {
+                    "forecast_source": "test forecast",
+                    "climate_source": "test climate",
+                },
+                "resources": [
+                    {
+                        "id": "shelter-1",
+                        "demandCategory": "shelter_beds",
+                        "available": 500,
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["modelVersion"], "neural-demand-v3.0.0")
+        self.assertEqual(body["windowHours"], 6)
+        self.assertEqual(len(body["demand"]), 6)
+        self.assertEqual(len(body["shortages"]), 6)
+        self.assertTrue(body["inventoryProvided"])
+        shelter = next(item for item in body["shortages"] if item["category"] == "shelter_beds")
+        self.assertEqual(shelter["available"], 500)
+
+    def test_v3_model_discloses_proxy_labels(self) -> None:
+        response = self.client.get("/v3/model")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["architecture"], [21, 16, 10, 6])
+        self.assertIn("proxy", body["training"]["labelType"])
 
 
 if __name__ == "__main__":

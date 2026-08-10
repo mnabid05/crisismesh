@@ -14,8 +14,8 @@ from .service import NeuralIntelligenceService
 
 app = FastAPI(
     title="CrisisMesh Intelligence",
-    description="Explainable neural hazard fusion and resource allocation.",
-    version="0.2.0",
+    description="Explainable six-hour demand estimation and resource allocation.",
+    version="0.3.0",
     docs_url="/docs",
 )
 INTELLIGENCE = NeuralIntelligenceService()
@@ -27,7 +27,7 @@ def health() -> dict[str, str]:
     return {
         "status": "ok",
         "service": "crisismesh-intelligence",
-        "modelVersion": INTELLIGENCE.prediction_model.version,
+        "modelVersion": INTELLIGENCE.demand_model.version,
     }
 
 
@@ -57,6 +57,23 @@ def prediction_model_metadata() -> dict[str, object]:
     }
 
 
+@app.get("/v3/model")
+def demand_model_metadata() -> dict[str, object]:
+    artifact = INTELLIGENCE.demand_model.artifact
+    return {
+        "version": INTELLIGENCE.demand_model.version,
+        "kind": artifact["kind"],
+        "windowHours": INTELLIGENCE.demand_model.window_hours,
+        "features": INTELLIGENCE.demand_model.feature_names,
+        "outputs": INTELLIGENCE.demand_model.output_names,
+        "architecture": artifact["architecture"],
+        "normalization": artifact["normalization"],
+        "metrics": artifact["metrics"],
+        "training": artifact["training"],
+        "decisionAuthority": False,
+    }
+
+
 @app.get("/v2/providers/health")
 def provider_health() -> dict[str, object]:
     return {
@@ -65,14 +82,14 @@ def provider_health() -> dict[str, object]:
                 "name": "Open-Meteo",
                 "role": "forecast context",
                 "status": "configured",
-                "timeoutSeconds": 6,
+                "timeoutSeconds": 2.5,
                 "cacheTtlSeconds": 600,
             },
             {
                 "name": "NASA POWER",
                 "role": "recent climate context",
                 "status": "configured",
-                "timeoutSeconds": 9,
+                "timeoutSeconds": 3.5,
                 "cacheTtlSeconds": 21600,
             },
         ],
@@ -128,6 +145,34 @@ async def predict_escalation(payload: dict[str, Any]) -> dict[str, Any]:
                 }
             )
         return await asyncio.to_thread(INTELLIGENCE.predict, incident, environment)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/v3/demand")
+async def predict_demand(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        incident_payload = payload.get("incident", payload)
+        if not isinstance(incident_payload, dict):
+            raise ValueError("incident must be a JSON object")
+        incident = Incident.from_dict(incident_payload)
+        environment_payload = payload.get("environment")
+        environment = None
+        if isinstance(environment_payload, dict):
+            environment = EnvironmentalSignals(
+                **{
+                    key: value
+                    for key, value in environment_payload.items()
+                    if key in ENVIRONMENT_FIELDS
+                }
+            )
+        resources_payload = payload.get("resources")
+        resources = None
+        if resources_payload is not None:
+            if not isinstance(resources_payload, list):
+                raise ValueError("resources must be a JSON array")
+            resources = [item for item in resources_payload if isinstance(item, dict)]
+        return await asyncio.to_thread(INTELLIGENCE.demand, incident, environment, resources)
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

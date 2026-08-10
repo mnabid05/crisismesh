@@ -1,7 +1,7 @@
 [project]
 name = "crisismesh-intelligence"
-version = "0.1.0"
-description = "Explainable disaster risk scoring and resource allocation"
+version = "0.3.0"
+description = "Explainable six-hour disaster demand estimation and resource allocation"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.128.1,<1",
