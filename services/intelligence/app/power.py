@@ -63,7 +63,7 @@ class NasaPowerClient:
 
 
 def _fetch_json(url: str) -> dict[str, Any]:
-    return fetch_provider_json(url, source="NASA POWER", timeout=9.0)
+    return fetch_provider_json(url, source="NASA POWER", timeout=3.5)
 
 
 def _mapping(value: object) -> dict[str, Any]:

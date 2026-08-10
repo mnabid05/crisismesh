@@ -88,7 +88,7 @@ class OpenMeteoClient:
 
 
 def _fetch_json(url: str) -> dict[str, Any]:
-    return fetch_provider_json(url, source="Open-Meteo", timeout=6.0)
+    return fetch_provider_json(url, source="Open-Meteo", timeout=2.5)
 
 
 def _mapping(value: object) -> dict[str, Any]:
