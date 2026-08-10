@@ -1,0 +1,5 @@
+import type { DashboardData } from "@/lib/types";
+
+export function IncidentCatalog({ data }: { data: DashboardData }) {
+  return <main className="page-shell subpage"><div className="page-heading"><span className="eyebrow">Observed facts</span><h1>Active incident signals</h1><p>Current events from NASA EONET, NOAA/NWS, and USGS. Forecast estimates are visually separated from provider facts.</p></div><div className="incident-cards">{data.incidents.map((incident) => <article key={incident.id}><div><span className={`severity ${incident.severity}`}>{incident.severity}</span><span className="source-chip">{incident.source}</span></div><h2>{incident.title}</h2><p>{incident.description}</p><dl><div><dt>Location</dt><dd>{incident.regions.join(", ")}</dd></div><div><dt>Observed</dt><dd>{new Date(incident.startedAt).toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" })}</dd></div><div><dt>24h index</dt><dd>{incident.riskScore}/100</dd></div></dl><a href={incident.sourceUrl ?? "#"} target="_blank" rel="noreferrer">Verify with provider ↗</a></article>)}</div></main>;
+}
