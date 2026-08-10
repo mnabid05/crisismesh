@@ -44,15 +44,24 @@ interface NwsPayload {
 interface UsgsPayload {
   features: Array<{
     id: string;
-    properties: { mag?: number; place?: string; url?: string; time?: number };
+    properties: {
+      mag?: number;
+      place?: string;
+      url?: string;
+      time?: number;
+      sig?: number;
+      alert?: string | null;
+      tsunami?: number;
+    };
     geometry?: { coordinates?: number[] };
   }>;
 }
 
-interface NeuralResponse extends NeuralInsight {
-  riskScore: number;
+interface PredictionResponse extends NeuralInsight {
+  target: string;
   confidence: number;
-  severity: Severity;
+  horizons: NonNullable<NeuralInsight["horizons"]>;
+  provenance: NonNullable<NeuralInsight["provenance"]>;
 }
 
 async function fetchJSON<T>(url: string, headers: HeadersInit = {}): Promise<T> {
@@ -206,13 +215,20 @@ async function loadUsgs(): Promise<Incident[]> {
       confidence: 0.99,
       affectedPopulation: estimatedExposure(severity, "earthquake"),
       regions: [feature.properties.place ?? "Region pending"],
+      metadata: {
+        magnitude,
+        depth: coordinates[2] ?? 0,
+        significance: feature.properties.sig ?? 0,
+        alert: feature.properties.alert ?? "",
+        tsunami: feature.properties.tsunami === 1,
+      },
     }];
   });
 }
 
 async function addNeuralScore(incident: Incident): Promise<Incident> {
   try {
-    const response = await fetch(`${intelligenceUrl.replace(/\/$/, "")}/v1/neural/score`, {
+    const response = await fetch(`${intelligenceUrl.replace(/\/$/, "")}/v2/predictions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ incident }),
@@ -220,19 +236,22 @@ async function addNeuralScore(incident: Incident): Promise<Incident> {
       signal: AbortSignal.timeout(9500),
     });
     if (!response.ok) return incident;
-    const neural = await response.json() as NeuralResponse;
+    const neural = await response.json() as PredictionResponse;
+    const day = neural.horizons.find((horizon) => horizon.hours === 24) ?? neural.horizons[0];
     return {
       ...incident,
-      riskScore: neural.riskScore,
+      riskScore: Math.round((day?.probability ?? incident.riskScore / 100) * 100),
       confidence: neural.confidence,
-      severity: neural.severity,
       intelligence: {
-        probability: neural.probability,
+        probability: day?.probability ?? incident.riskScore / 100,
         modelVersion: neural.modelVersion,
         modelKind: neural.modelKind,
         topSignals: neural.topSignals,
         environment: neural.environment,
         disclaimer: neural.disclaimer,
+        horizons: neural.horizons,
+        target: neural.target,
+        provenance: neural.provenance,
       },
     };
   } catch {

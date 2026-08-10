@@ -29,6 +29,17 @@ export interface NeuralInsight {
   topSignals: NeuralSignal[];
   environment: EnvironmentSnapshot;
   disclaimer: string;
+  horizons?: PredictionHorizon[];
+  target?: string;
+  provenance?: { training: string[]; runtime: string[] };
+}
+
+export interface PredictionHorizon {
+  hours: number;
+  probability: number;
+  lower: number;
+  upper: number;
+  level: string;
 }
 
 export interface Incident {
@@ -50,6 +61,7 @@ export interface Incident {
   affectedPopulation: number;
   regions: string[];
   intelligence?: NeuralInsight;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 export interface Resource {
