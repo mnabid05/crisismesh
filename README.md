@@ -1,6 +1,6 @@
 # CrisisMesh
 
-Real-time disaster intelligence and response coordination. CrisisMesh turns NASA EONET, NASA POWER meteorology, NOAA/NWS alerts, Open-Meteo forecasts, and USGS earthquake feeds into a shared incident picture, assigns transparent operational risk, and recommends deployable response assets.
+Real-time disaster intelligence, prediction, and response coordination. CrisisMesh combines active disasters, weather warnings, infrastructure status, shelters, volunteers, and supplies in a shared operating picture. It estimates escalation at 6, 24, and 72 hours, recommends where responders should stage resources, and reranks the plan whenever conditions or availability change.
 
 > CrisisMesh is a decision-support portfolio project. It is not an official warning service, evacuation authority, or replacement for local emergency management guidance.
 
@@ -9,7 +9,8 @@ Real-time disaster intelligence and response coordination. CrisisMesh turns NASA
 - Three-language system: Go for concurrent ingestion and APIs, Python for explainable scoring and optimization, TypeScript/Next.js for the command interface.
 - Live external integrations with normalization, deduplication, timeouts, and source-aware fallbacks.
 - PostGIS spatial persistence, NATS event distribution, Server-Sent Events, and a capacity-aware allocation engine.
-- Reproducible 18-input neural risk model with provider caching, local feature-ablation explanations, a FastAPI runtime, and an explicit model card.
+- Reproducible 21-input, three-horizon neural model trained on 18,500 NOAA and USGS records, with uncertainty ranges, feature-ablation explanations, chronological evaluation, and an explicit model card.
+- Interactive operations workspace with live incident selection, capacity tracking, infrastructure provenance, staging recommendations, and revision-aware replanning.
 - Reproducible local deployment through Docker Compose and production-oriented Kubernetes packaging through Helm.
 - CI, CodeQL, Trivy, SBOM/provenance-enabled releases, atomic deployments, HPA, disruption budgets, and default-deny network policy.
 - Prometheus metrics, Grafana dashboard, health probes, structured logs, and a k6 load profile.
@@ -47,7 +48,9 @@ docker compose up --build
 
 Open:
 
-- Command center: `http://localhost:3000`
+- Prediction workspace: `http://localhost:3000`
+- Collaborative operations map: `http://localhost:3000/operations`
+- Incidents, sources, preparedness, and model card: `/incidents`, `/sources`, `/resources`, `/model`
 - Operations API: `http://localhost:8080/api/v1/incidents`
 - Prometheus: `http://localhost:9090`
 - Grafana: `http://localhost:3001` (`admin` / `crisismesh`)
@@ -75,6 +78,9 @@ cd ../.. && corepack enable && pnpm install && pnpm --filter @crisismesh/web typ
 | `POST` | `/api/v1/allocations` | Generate a ranked response package |
 | `GET` | `/api/v1/summary` | Operational rollup and source health |
 | `GET` | `/metrics` | Prometheus metrics |
+| `POST` | `/v2/predictions` | 6/24/72-hour escalation estimates from the Python service |
+| `GET` | `/v2/model` | Model architecture, training summary, and held-out metrics |
+| `GET` | `/v2/providers/health` | Environmental-provider cache and timeout contracts |
 
 The full contract is in [OpenAPI](docs/openapi.yaml).
 
@@ -91,7 +97,7 @@ helm upgrade --install crisismesh deploy/helm/crisismesh \
 
 See the [operations runbook](docs/runbook.md), [threat model](docs/threat-model.md), and [delivery roadmap](docs/commit-roadmap.md).
 
-The experimental neural system is documented in the [model card](docs/model-card.md), including its synthetic training disclosure and validation requirements.
+The experimental neural system and official-source training snapshot are documented in the [training-data note](docs/training-data.md) and the in-app model card. The v1 synthetic scorer remains available for compatibility but is no longer the primary prediction surface.
 The public web and neural services deployment flow is documented in the [Vercel deployment guide](docs/deployment-vercel.md).
 
 ## Measurable portfolio targets

@@ -84,7 +84,7 @@ official authority.
 - [x] 63. Separate current incident facts from model-generated predictions.
 - [x] 64. Add plain-language model confidence and freshness labels.
 - [x] 65. Simplify the incident list and filters.
-- [ ] 66. Restyle the map for the light visual system.
+- [x] 66. Restyle the map for the light visual system.
 - [ ] 67. Add a dedicated source-health and provenance view.
 - [x] 68. Add a dedicated natural-disaster resource library.
 - [x] 69. Link every resource to an official or established response organization.
