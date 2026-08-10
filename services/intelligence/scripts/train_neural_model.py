@@ -59,8 +59,7 @@ def train(
     generator = random.Random(SEED)
     samples = [synthetic_example(generator) for _ in range(sample_count)]
     hidden_weights = [
-        [generator.uniform(-0.24, 0.24) for _ in FEATURE_NAMES]
-        for _ in range(HIDDEN_UNITS)
+        [generator.uniform(-0.24, 0.24) for _ in FEATURE_NAMES] for _ in range(HIDDEN_UNITS)
     ]
     hidden_biases = [generator.uniform(0.0, 0.08) for _ in range(HIDDEN_UNITS)]
     output_weights = [generator.uniform(-0.2, 0.2) for _ in range(HIDDEN_UNITS)]
@@ -110,9 +109,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    hidden_weights, hidden_biases, output_weights, output_bias = train(
-        args.samples, args.epochs
-    )
+    hidden_weights, hidden_biases, output_weights, output_bias = train(args.samples, args.epochs)
     artifact = {
         "version": "neural-risk-v1.0.0",
         "features": list(FEATURE_NAMES),

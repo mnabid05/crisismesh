@@ -13,8 +13,7 @@ from .features import EnvironmentalSignals
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_FIELDS = (
-    "temperature_2m,relative_humidity_2m,precipitation,"
-    "wind_speed_10m,wind_gusts_10m"
+    "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_gusts_10m"
 )
 
 
