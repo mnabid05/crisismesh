@@ -1,5 +1,5 @@
 import { fallbackData } from "./fallback-data";
-import { getLiveFusionData } from "./live-data";
+import { getLiveFusionData, withPlanningBaselines } from "./live-data";
 import type { DashboardData, Incident, Resource, Summary } from "./types";
 
 const apiUrl = process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
@@ -27,6 +27,6 @@ export async function getDashboardData(): Promise<DashboardData> {
       infrastructure: fallbackData.infrastructure,
     };
   } catch {
-    return await getLiveFusionData() ?? fallbackData;
+    return withPlanningBaselines(await getLiveFusionData() ?? fallbackData);
   }
 }

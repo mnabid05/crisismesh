@@ -41,6 +41,42 @@ export interface NeuralInsight {
     sources: string[];
     missing: string[];
   };
+  windowHours?: number;
+  demandIndex?: number;
+  demandLevel?: string;
+  demand?: DemandEstimate[];
+  shortages?: ShortageEstimate[];
+  inventoryProvided?: boolean;
+  planningBasis?: {
+    affectedPopulation: number;
+    quantityMethod: string;
+    labelType: string;
+  };
+}
+
+export type DemandCategory =
+  | "shelter_beds"
+  | "medical_teams"
+  | "rescue_teams"
+  | "water_liters"
+  | "meals"
+  | "transport_seats";
+
+export interface DemandEstimate {
+  category: DemandCategory;
+  label: string;
+  unit: string;
+  pressure: number;
+  quantity: number;
+  lower: number;
+  upper: number;
+}
+
+export interface ShortageEstimate extends DemandEstimate {
+  available: number | null;
+  shortfall: number | null;
+  coverage: number | null;
+  urgency: "critical" | "high" | "moderate" | "covered" | "unknown";
 }
 
 export interface PredictionHorizon {
@@ -83,6 +119,8 @@ export interface Resource {
   latitude: number;
   longitude: number;
   capabilities: string[];
+  demandCategory?: DemandCategory;
+  unit?: string;
 }
 
 export interface SourceHealth {

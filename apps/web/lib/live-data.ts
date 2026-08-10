@@ -1,4 +1,5 @@
 import { fallbackData } from "./fallback-data";
+import { buildPlanningBaseline } from "./demand";
 import type {
   DashboardData,
   Incident,
@@ -57,14 +58,19 @@ interface UsgsPayload {
   }>;
 }
 
-interface PredictionResponse extends NeuralInsight {
+interface DemandResponse extends NeuralInsight {
   target: string;
   confidence: number;
-  horizons: NonNullable<NeuralInsight["horizons"]>;
+  windowHours: number;
+  demandIndex: number;
+  demandLevel: string;
+  demand: NonNullable<NeuralInsight["demand"]>;
+  shortages: NonNullable<NeuralInsight["shortages"]>;
   provenance: NonNullable<NeuralInsight["provenance"]>;
-  trajectory: NonNullable<NeuralInsight["trajectory"]>;
   confidenceLabel: string;
   providerCoverage: NonNullable<NeuralInsight["providerCoverage"]>;
+  inventoryProvided: boolean;
+  planningBasis: NonNullable<NeuralInsight["planningBasis"]>;
 }
 
 async function fetchJSON<T>(url: string, headers: HeadersInit = {}): Promise<T> {
@@ -231,38 +237,63 @@ async function loadUsgs(): Promise<Incident[]> {
 
 async function addNeuralScore(incident: Incident): Promise<Incident> {
   try {
-    const response = await fetch(`${intelligenceUrl.replace(/\/$/, "")}/v2/predictions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ incident }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(9500),
-    });
-    if (!response.ok) return incident;
-    const neural = await response.json() as PredictionResponse;
-    const day = neural.horizons.find((horizon) => horizon.hours === 24) ?? neural.horizons[0];
+    const request = async (useNeutralEnvironment: boolean, timeout: number) => {
+      const response = await fetch(`${intelligenceUrl.replace(/\/$/, "")}/v3/demand`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          incident,
+          resources: fallbackData.resources,
+          ...(useNeutralEnvironment ? { environment: {} } : {}),
+        }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(timeout),
+      });
+      if (!response.ok) throw new Error(`intelligence service returned ${response.status}`);
+      return response.json() as Promise<DemandResponse>;
+    };
+    let neural: DemandResponse;
+    try {
+      neural = await request(false, 7_500);
+    } catch {
+      neural = await request(true, 1_800);
+    }
     return {
       ...incident,
-      riskScore: Math.round((day?.probability ?? incident.riskScore / 100) * 100),
+      riskScore: neural.demandIndex,
       confidence: neural.confidence,
       intelligence: {
-        probability: day?.probability ?? incident.riskScore / 100,
+        probability: neural.demandIndex / 100,
         modelVersion: neural.modelVersion,
         modelKind: neural.modelKind,
         topSignals: neural.topSignals,
         environment: neural.environment,
         disclaimer: neural.disclaimer,
-        horizons: neural.horizons,
         target: neural.target,
         provenance: neural.provenance,
-        trajectory: neural.trajectory,
         confidenceLabel: neural.confidenceLabel,
         providerCoverage: neural.providerCoverage,
+        windowHours: neural.windowHours,
+        demandIndex: neural.demandIndex,
+        demandLevel: neural.demandLevel,
+        demand: neural.demand,
+        shortages: neural.shortages,
+        inventoryProvided: neural.inventoryProvided,
+        planningBasis: neural.planningBasis,
       },
     };
   } catch {
     return incident;
   }
+}
+
+export function withPlanningBaselines(data: DashboardData): DashboardData {
+  return {
+    ...data,
+    incidents: data.incidents.map((incident) => incident.intelligence?.demand?.length
+      ? incident
+      : { ...incident, intelligence: buildPlanningBaseline(incident, data.resources) }),
+  };
 }
 
 function sourceHealth(name: string, result: PromiseSettledResult<Incident[]>): SourceHealth {
