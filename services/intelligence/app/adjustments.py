@@ -23,3 +23,13 @@ def hazard_environmental_adjustment(
         wind = environment.wind_speed_kph / 1000.0
         return heat + dryness + wind
     return 0.0
+
+
+def capped_environmental_adjustment(
+    hazard: str,
+    environment: EnvironmentalSignals,
+    *,
+    maximum: float = 0.08,
+) -> float:
+    raw = hazard_environmental_adjustment(hazard, environment)
+    return max(-maximum, min(maximum, raw))

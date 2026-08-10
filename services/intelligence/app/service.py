@@ -4,7 +4,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from .adjustments import hazard_environmental_adjustment
+from .adjustments import capped_environmental_adjustment
 from .features import EnvironmentalSignals, build_feature_vector
 from .models import Incident
 from .neural import NeuralRiskModel
@@ -98,14 +98,19 @@ class NeuralIntelligenceService:
         )
         confidence = min(0.98, incident.confidence * 0.72 + provider_coverage * 0.1)
         horizons = self.prediction_model.predict(features, confidence=confidence)
-        adjustment = hazard_environmental_adjustment(incident.kind, environment)
+        adjustment = capped_environmental_adjustment(incident.kind, environment)
         adjusted_horizons: list[dict[str, Any]] = []
+        previous = 0.0
         for horizon, weight in zip(horizons, (0.65, 1.0, 0.5), strict=True):
             item = asdict(horizon)
-            item["probability"] = round(
-                max(0.0, min(1.0, horizon.probability + adjustment * weight)), 4
-            )
+            delta = adjustment * weight
+            probability = max(previous, min(1.0, horizon.probability + delta))
+            item["probability"] = round(probability, 4)
+            item["lower"] = round(max(0.0, min(probability, horizon.lower + delta)), 4)
+            item["upper"] = round(min(1.0, max(probability, horizon.upper + delta)), 4)
+            item["level"] = _prediction_level(probability)
             adjusted_horizons.append(item)
+            previous = probability
         return {
             "incidentId": incident.id,
             "target": "operational escalation likelihood for an already observed incident",
@@ -128,3 +133,13 @@ class NeuralIntelligenceService:
                 "will occur. Follow local authorities and linked official sources."
             ),
         }
+
+
+def _prediction_level(probability: float) -> str:
+    if probability >= 0.75:
+        return "very high"
+    if probability >= 0.5:
+        return "high"
+    if probability >= 0.25:
+        return "watch"
+    return "low"
