@@ -244,6 +244,15 @@ def chronological_split(
     return ordered[:train_end], ordered[train_end:validation_end], ordered[validation_end:]
 
 
+def deduplicate_examples(examples: Iterable[TrainingExample]) -> list[TrainingExample]:
+    """Keep the newest canonical record for each provider event identifier."""
+
+    unique: dict[tuple[str, str], TrainingExample] = {}
+    for example in sorted(examples, key=lambda item: item.occurred_at):
+        unique[(example.source, example.event_id)] = example
+    return sorted(unique.values(), key=lambda item: (item.occurred_at, item.source, item.event_id))
+
+
 def write_jsonl(path: Path, examples: Iterable[TrainingExample]) -> str:
     lines = [
         json.dumps(example.to_dict(), separators=(",", ":"), sort_keys=True) for example in examples

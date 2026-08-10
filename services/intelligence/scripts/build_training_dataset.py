@@ -17,6 +17,7 @@ from app.training_data import (
     DatasetSource,
     TrainingExample,
     content_digest,
+    deduplicate_examples,
     parse_noaa_csv,
     usgs_examples,
     write_jsonl,
@@ -251,7 +252,7 @@ def main() -> None:
         collect_usgs_files(args.usgs_json) if args.usgs_json else collect_usgs(args.usgs_years)
     )
     examples = balanced_examples(
-        [*noaa, *usgs],
+        deduplicate_examples([*noaa, *usgs]),
         maximum_per_source_hazard=args.maximum_per_source_hazard,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
