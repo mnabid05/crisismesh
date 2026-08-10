@@ -1,8 +1,7 @@
-import { CommandCenter } from "@/components/command-center";
+import { PredictionDashboard } from "@/components/prediction-dashboard";
 import { getDashboardData } from "@/lib/api";
 
 export default async function Home() {
   const data = await getDashboardData();
-  return <CommandCenter initialData={data} />;
+  return <PredictionDashboard data={data} />;
 }
-

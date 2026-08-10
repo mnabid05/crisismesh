@@ -29,6 +29,17 @@ export interface NeuralInsight {
   topSignals: NeuralSignal[];
   environment: EnvironmentSnapshot;
   disclaimer: string;
+  horizons?: PredictionHorizon[];
+  target?: string;
+  provenance?: { training: string[]; runtime: string[] };
+}
+
+export interface PredictionHorizon {
+  hours: number;
+  probability: number;
+  lower: number;
+  upper: number;
+  level: string;
 }
 
 export interface Incident {
@@ -50,6 +61,7 @@ export interface Incident {
   affectedPopulation: number;
   regions: string[];
   intelligence?: NeuralInsight;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 export interface Resource {
@@ -69,6 +81,16 @@ export interface SourceHealth {
   status: string;
   lastSync: string;
   lagSeconds: number;
+}
+
+export interface InfrastructureStatus {
+  id: string;
+  name: string;
+  kind: "power" | "transport" | "communications" | "water";
+  status: "operational" | "monitoring" | "impaired" | "offline";
+  detail: string;
+  source: string;
+  updatedAt: string;
 }
 
 export interface Summary {
@@ -103,4 +125,5 @@ export interface DashboardData {
   connected: boolean;
   streaming: boolean;
   dataMode: DataMode;
+  infrastructure: InfrastructureStatus[];
 }

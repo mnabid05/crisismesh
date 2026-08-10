@@ -1,2 +1,1 @@
 """CrisisMesh intelligence service."""
-

@@ -24,6 +24,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       connected: true,
       streaming: true,
       dataMode: "operations",
+      infrastructure: fallbackData.infrastructure,
     };
   } catch {
     return await getLiveFusionData() ?? fallbackData;

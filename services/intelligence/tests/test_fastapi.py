@@ -16,7 +16,7 @@ class FastApiTests(unittest.TestCase):
         response = self.client.get("/healthz")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["modelVersion"], "neural-risk-v1.0.0")
+        self.assertEqual(response.json()["modelVersion"], "neural-escalation-v2.0.0")
 
     def test_neural_score_accepts_environment_override(self) -> None:
         response = self.client.post(
@@ -56,6 +56,50 @@ class FastApiTests(unittest.TestCase):
         self.assertEqual(body["modelKind"], "feed-forward-neural-network")
         self.assertEqual(len(body["topSignals"]), 5)
         self.assertGreater(body["riskScore"], 50)
+
+    def test_v2_prediction_returns_three_horizons(self) -> None:
+        response = self.client.post(
+            "/v2/predictions",
+            json={
+                "incident": {
+                    "id": "prediction-1",
+                    "title": "Observed earthquake",
+                    "kind": "earthquake",
+                    "severity": "high",
+                    "status": "active",
+                    "latitude": 34.1,
+                    "longitude": -118.2,
+                    "confidence": 0.94,
+                    "affectedPopulation": 25000,
+                    "startedAt": datetime.now(UTC).isoformat(),
+                    "metadata": {
+                        "depth": 12,
+                        "significance": 680,
+                        "alert": "yellow",
+                    },
+                },
+                "environment": {
+                    "forecast_source": "test forecast",
+                    "climate_source": "test climate",
+                },
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["modelVersion"], "neural-escalation-v2.0.0")
+        self.assertEqual([item["hours"] for item in body["horizons"]], [6, 24, 72])
+        self.assertLessEqual(
+            body["horizons"][0]["probability"], body["horizons"][2]["probability"]
+        )
+
+    def test_provider_health_discloses_cache_and_timeout_contracts(self) -> None:
+        response = self.client.get("/v2/providers/health")
+
+        self.assertEqual(response.status_code, 200)
+        providers = response.json()["providers"]
+        self.assertEqual({item["name"] for item in providers}, {"Open-Meteo", "NASA POWER"})
+        self.assertTrue(all(item["timeoutSeconds"] > 0 for item in providers))
 
 
 if __name__ == "__main__":

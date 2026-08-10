@@ -19,6 +19,14 @@ export const fallbackData: DashboardData = {
     { id: "res-med-07", name: "Mobile Medical Unit 07", kind: "medical", status: "ready", quantity: 18, available: 12, latitude: 30.27, longitude: -97.74, capabilities: ["triage", "critical-care"] },
     { id: "res-air-03", name: "Aviation Wing 03", kind: "aviation", status: "partial", quantity: 8, available: 5, latitude: 32.9, longitude: -80.0, capabilities: ["evacuation", "reconnaissance", "cargo"] },
     { id: "res-shelter-12", name: "Shelter Support 12", kind: "shelter", status: "ready", quantity: 600, available: 480, latitude: 28.54, longitude: -81.38, capabilities: ["cots", "meals", "accessibility"] },
+    { id: "res-volunteer-04", name: "Community Volunteer Network", kind: "volunteer", status: "ready", quantity: 230, available: 186, latitude: 29.76, longitude: -95.37, capabilities: ["wellness-checks", "distribution", "translation"] },
+    { id: "res-supply-09", name: "Regional Supply Cache 09", kind: "supplies", status: "ready", quantity: 1500, available: 1120, latitude: 35.22, longitude: -80.84, capabilities: ["water", "meals", "blankets"] },
+  ],
+  infrastructure: [
+    { id: "infra-power-01", name: "Regional power network", kind: "power", status: "monitoring", detail: "Weather exposure elevated; no verified outage feed connected.", source: "Coordination demo layer", updatedAt: ago(4) },
+    { id: "infra-road-01", name: "Primary transport corridors", kind: "transport", status: "impaired", detail: "Flood and fire incidents may affect routing; verify with local DOT sources.", source: "Incident-derived status", updatedAt: ago(6) },
+    { id: "infra-comms-01", name: "Emergency communications", kind: "communications", status: "operational", detail: "Coordination channel available in the demonstration workspace.", source: "Coordination demo layer", updatedAt: ago(2) },
+    { id: "infra-water-01", name: "Public water systems", kind: "water", status: "monitoring", detail: "No live utility adapter connected; status is not authoritative.", source: "Integration placeholder", updatedAt: ago(12) },
   ],
   summary: {
     activeIncidents: 4,

@@ -29,9 +29,7 @@ class NeuralRiskModel:
             tuple(tuple(float(value) for value in row) for row in layer)
             for layer in artifact["weights"]
         )
-        self.biases = tuple(
-            tuple(float(value) for value in layer) for layer in artifact["biases"]
-        )
+        self.biases = tuple(tuple(float(value) for value in layer) for layer in artifact["biases"])
         if len(self.weights) != len(self.biases):
             raise ValueError("model weights and biases must contain the same number of layers")
         previous_size = len(self.feature_names)
