@@ -4,6 +4,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
+from .adjustments import hazard_environmental_adjustment
 from .features import EnvironmentalSignals, build_feature_vector
 from .models import Incident
 from .neural import NeuralRiskModel
@@ -97,10 +98,18 @@ class NeuralIntelligenceService:
         )
         confidence = min(0.98, incident.confidence * 0.72 + provider_coverage * 0.1)
         horizons = self.prediction_model.predict(features, confidence=confidence)
+        adjustment = hazard_environmental_adjustment(incident.kind, environment)
+        adjusted_horizons: list[dict[str, Any]] = []
+        for horizon, weight in zip(horizons, (0.65, 1.0, 0.5), strict=True):
+            item = asdict(horizon)
+            item["probability"] = round(
+                max(0.0, min(1.0, horizon.probability + adjustment * weight)), 4
+            )
+            adjusted_horizons.append(item)
         return {
             "incidentId": incident.id,
             "target": "operational escalation likelihood for an already observed incident",
-            "horizons": [asdict(horizon) for horizon in horizons],
+            "horizons": adjusted_horizons,
             "confidence": round(max(0.35, confidence), 2),
             "topSignals": self.prediction_model.explain(features),
             "modelVersion": self.prediction_model.version,
@@ -108,6 +117,7 @@ class NeuralIntelligenceService:
             "featureVector": features.as_dict(),
             "environment": asdict(environment),
             "sourceErrors": errors,
+            "environmentalAdjustment": round(adjustment, 4),
             "provenance": {
                 "training": ["NOAA Storm Events 2025", "USGS Earthquake Catalog 2025"],
                 "runtime": [environment.forecast_source, environment.climate_source],
