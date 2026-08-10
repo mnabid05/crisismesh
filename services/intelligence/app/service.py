@@ -111,11 +111,14 @@ class NeuralIntelligenceService:
             item["level"] = _prediction_level(probability)
             adjusted_horizons.append(item)
             previous = probability
+        spread = adjusted_horizons[-1]["probability"] - adjusted_horizons[0]["probability"]
         return {
             "incidentId": incident.id,
             "target": "operational escalation likelihood for an already observed incident",
             "horizons": adjusted_horizons,
             "confidence": round(max(0.35, confidence), 2),
+            "confidenceLabel": _confidence_label(confidence),
+            "trajectory": "rising" if spread >= 0.08 else "steady",
             "topSignals": self.prediction_model.explain(features),
             "modelVersion": self.prediction_model.version,
             "modelKind": "multi-output-feed-forward-neural-network",
@@ -143,3 +146,11 @@ def _prediction_level(probability: float) -> str:
     if probability >= 0.25:
         return "watch"
     return "low"
+
+
+def _confidence_label(confidence: float) -> str:
+    if confidence >= 0.85:
+        return "strong coverage"
+    if confidence >= 0.65:
+        return "moderate coverage"
+    return "limited coverage"
