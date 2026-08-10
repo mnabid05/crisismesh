@@ -69,7 +69,7 @@ jobs:
         with:
           node-version: 22
       - name: Validate Vercel services manifest
-        run: node -e 'const v=require("./vercel.json"); if(v.framework!=="services" || !v.experimentalServices?.web || !v.experimentalServices?.intelligence) process.exit(1)'
+        run: node -e 'const v=require("./vercel.json"); if(v.framework!=="services" || !v.services?.web || !v.services?.intelligence) process.exit(1)'
 
   containers:
     runs-on: ubuntu-latest

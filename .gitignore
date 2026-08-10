@@ -16,3 +16,5 @@ services/intelligence/data/generated/
 *.tsbuildinfo
 services/ingestor/ingestor
 deploy/helm/crisismesh/charts/
+.vercel
+.env*
