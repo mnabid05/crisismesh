@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type FormEvent, type MouseEvent } from "react";
 
+import { intelligenceFor } from "@/lib/demand";
 import type { DashboardData, Incident, Resource } from "@/lib/types";
 
 function distance(left: Incident, right: Resource) {
@@ -48,12 +49,19 @@ export function OperationsBoard({ data }: { data: DashboardData }) {
     } : selectedIncident, [customTarget, selectedIncident]);
   const recommendations = useMemo(() => {
     if (!incident) return [];
+    const demand = intelligenceFor(incident, data.resources);
+    const gaps = new Map((demand.shortages ?? []).map((item) => [item.category, item]));
     return data.resources
       .filter((resource) => resource.available > 0 && !staged.includes(resource.id))
-      .map((resource) => ({ resource, distance: distance(incident, resource), fit: fit(incident, resource) }))
-      .sort((left, right) => right.fit - left.fit || left.distance - right.distance)
+      .map((resource) => {
+        const gap = resource.demandCategory ? gaps.get(resource.demandCategory) : undefined;
+        const gapRatio = gap?.shortfall == null ? 0 : gap.shortfall / Math.max(1, gap.quantity);
+        return { resource, distance: distance(incident, resource), fit: fit(incident, resource), gap, gapRatio };
+      })
+      .sort((left, right) => right.gapRatio - left.gapRatio || right.fit - left.fit || left.distance - right.distance)
       .slice(0, 4);
   }, [data.resources, incident, staged]);
+  const immediatePlan = useMemo(() => incident ? intelligenceFor(incident, data.resources) : null, [data.resources, incident]);
 
   const stage = (resourceId: string) => {
     setStaged((current) => [...current, resourceId]);
@@ -98,8 +106,10 @@ export function OperationsBoard({ data }: { data: DashboardData }) {
         {data.incidents.map((item) => <button type="button" className={`event-pin ${item.severity} ${!customTarget && item.id === incident.id ? "selected" : ""}`} style={project(item.latitude, item.longitude)} key={item.id} onClick={(event) => { event.stopPropagation(); setCustomTarget(null); setIncidentId(item.id); setRevision((current) => current + 1); }} aria-label={`Plan for ${item.title}`}>{Math.round(item.riskScore)}</button>)}
       </div><div className="map-caption"><span>● Incident risk index</span><span>R Response asset</span><span>+ Custom target</span><span>Click anywhere worldwide</span></div><form className="coordinate-picker" onSubmit={submitCoordinates}><label>Latitude<input type="number" min="-90" max="90" step="0.001" value={latitudeInput} onChange={(event) => setLatitudeInput(event.target.value)} /></label><label>Longitude<input type="number" min="-180" max="180" step="0.001" value={longitudeInput} onChange={(event) => setLongitudeInput(event.target.value)} /></label><button type="submit">Set global target</button></form></section>
 
-      <aside className="staging-card"><div className="ops-card-heading"><div><span className="eyebrow">Recommended staging</span><h2>Next best moves</h2></div><span className="live-badge">auto-ranked</span></div><div className="recommendation-list">{recommendations.map(({ resource, distance: distanceKm, fit: match }) => <article key={resource.id}><div><span>{resource.kind}</span><strong>{resource.name}</strong><small>{resource.available} available · {Math.round(distanceKm)} km · {match} capability matches</small></div><button type="button" onClick={() => stage(resource.id)}>Stage</button></article>)}</div>{staged.length > 0 && <div className="staged-note">{staged.length} asset group{staged.length > 1 ? "s" : ""} staged. Remaining options reranked automatically.</div>}</aside>
+      <aside className="staging-card"><div className="ops-card-heading"><div><span className="eyebrow">Recommended staging</span><h2>Next best moves</h2></div><span className="live-badge">gap-ranked</span></div><div className="recommendation-list">{recommendations.map(({ resource, distance: distanceKm, fit: match, gap }) => <article key={resource.id}><div><span>{gap?.urgency ?? resource.kind} priority</span><strong>{resource.name}</strong><small>{resource.available.toLocaleString()} {resource.unit ?? "units"} · {Math.round(distanceKm)} km · {match} capability matches</small>{gap?.shortfall != null ? <em>{gap.shortfall.toLocaleString()} {gap.unit} estimated gap</em> : null}</div><button type="button" onClick={() => stage(resource.id)}>Stage</button></article>)}</div>{staged.length > 0 && <div className="staged-note">{staged.length} asset group{staged.length > 1 ? "s" : ""} staged. Remaining options reranked automatically.</div>}</aside>
     </div>
+
+    <section className="ops-section"><div className="ops-card-heading"><div><span className="eyebrow">Six-hour demand gaps</span><h2>Immediate needs versus available inventory</h2></div><span className="transparency-label">modeled estimate</span></div><div className="gap-grid">{(immediatePlan?.shortages ?? []).map((item) => <article key={item.category}><span className={`gap-label ${item.urgency}`}>{item.urgency}</span><h3>{item.label}</h3><strong>{(item.shortfall ?? item.quantity).toLocaleString()}</strong><small>{item.unit} shortfall</small><div><i style={{ width: `${Math.round((item.coverage ?? 0) * 100)}%` }} /></div><p>{item.available?.toLocaleString() ?? "—"} available / {item.quantity.toLocaleString()} estimated</p></article>)}</div><p className="safety-note"><strong>Human confirmation required:</strong> CrisisMesh ranks staging options from modeled demand, inventory, capability fit, and distance. It never dispatches assets autonomously.</p></section>
 
     <section className="ops-section"><div className="ops-card-heading"><div><span className="eyebrow">Response capacity</span><h2>Shelters, volunteers, supplies, and teams</h2></div></div><div className="capacity-grid">{data.resources.map((resource) => <article key={resource.id}><span>{resource.kind}</span><strong>{resource.available.toLocaleString()}</strong><h3>{resource.name}</h3><p>{resource.capabilities.join(" · ")}</p><div><i style={{ width: `${Math.round(resource.available / resource.quantity * 100)}%` }} /></div><small>{Math.round(resource.available / resource.quantity * 100)}% available</small></article>)}</div></section>
 
