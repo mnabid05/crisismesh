@@ -97,3 +97,11 @@ official authority.
 - [x] 73. Run TypeScript, React, Go, workflow, and container quality gates.
 - [x] 74. Verify desktop and mobile prediction flows in a real browser.
 - [x] 75. Publish, pass GitHub CI, deploy, and smoke-test the public production release.
+
+## Immediate-demand revision
+
+The original three-horizon escalation surface remains available as a backward-compatible v2 API.
+The primary v3 product replaces it with a single six-hour response window, six resource-pressure
+outputs, transparent quantity factors, unit-aware inventory gaps, and shortage-aware staging. This
+revision responds to the product decision that immediate action is more useful than comparing
+several speculative time horizons.

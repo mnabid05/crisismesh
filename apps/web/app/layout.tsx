@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "CrisisMesh — Predictive disaster response", template: "%s · CrisisMesh" },
-  description: "Multi-source disaster intelligence with transparent 6, 24, and 72-hour escalation estimates.",
+  description: "Multi-source disaster intelligence with transparent six-hour resource-demand estimates and shortage-aware staging.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
