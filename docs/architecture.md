@@ -16,7 +16,7 @@ The ingestor polls NASA EONET, NOAA/NWS, and USGS concurrently. Each adapter sup
 
 ### Operations API — Go
 
-The API owns incident and resource lifecycle, validation, persistence, write authentication, source summaries, SSE connections, and calls to the intelligence service. PostGIS is optional during development but required in production. NATS fans events across API replicas; a local broker keeps unit tests and single-process development simple.
+The API owns incident and resource lifecycle, validation, persistence, write authentication, source summaries, SSE connections, and calls to the intelligence service. PostGIS is optional for lightweight development and required when running the persistent operations stack. NATS fans events across API instances; a local broker keeps unit tests and single-process development simple.
 
 ### Intelligence — Python
 
@@ -40,7 +40,7 @@ Spatial indexes support proximity searches. Priority indexes support the main in
 - An intelligence timeout does not discard an incident; the API retains supplied/default risk and reports the degradation.
 - NATS is used after persistence. Consumers therefore treat events as invalidation/update hints and retrieve authoritative state from the API.
 - SSE is best-effort. Browsers reconnect automatically, and the dashboard begins from a server-rendered snapshot.
-- Kubernetes readiness removes unhealthy replicas before liveness restarts them.
+- Container health checks expose failures, while Vercel and Docker Compose provide the supported restart boundaries.
 
 ## Scaling path
 
@@ -49,8 +49,8 @@ Spatial indexes support proximity searches. Priority indexes support the main in
 | More source events | Add ingestor partitions by provider/region and use JetStream durable consumers |
 | More dashboard users | Scale stateless API/web replicas; keep reads behind cache/CDN where safe |
 | More spatial queries | Add PostGIS read replicas and bounded regional queries |
-| More allocation work | Queue allocation requests and autoscale intelligence workers by lag |
-| Regional outage | Deploy per-region API clusters with replicated event streams and DNS failover |
+| More allocation work | Queue allocation requests and scale intelligence workers independently |
+| Regional outage | Add a second managed deployment region with replicated data and DNS failover |
 
 ## Deliberate limitations
 

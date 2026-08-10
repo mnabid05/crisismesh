@@ -10,7 +10,7 @@
 ## First response
 
 1. Confirm dashboard mode and source-health lag.
-2. Check Kubernetes rollout and pod readiness.
+2. Check the Vercel deployment status or Docker Compose service health.
 3. Query API `/healthz`, `/readyz`, then `/metrics`.
 4. Check Postgres connections and NATS `/varz`.
 5. Identify whether the failure is source-specific, internal, or presentation-only.
@@ -27,7 +27,7 @@
 ### Allocation requests return 502
 
 - Check intelligence `/healthz` and request/error metrics.
-- Confirm the API service DNS and NetworkPolicy permit port 8090.
+- Confirm `INTELLIGENCE_URL` resolves and the intelligence service accepts traffic on port 8090.
 - Preserve incidents; disable the allocation action if the failure persists.
 - Operators may use documented manual procedures until recovery.
 
@@ -41,21 +41,17 @@
 ### Elevated latency
 
 - Compare API request rate/error counters with Postgres query latency.
-- Check HPA capacity, CPU throttling, and connection pool saturation.
+- Check container CPU/memory pressure and connection pool saturation.
 - Run the k6 read profile against staging before changing production limits.
 
 ## Rollback
 
-`deploy.yml` uses atomic Helm upgrades. A failed readiness deadline rolls back automatically. For a manual rollback:
-
-```bash
-helm history crisismesh -n crisismesh
-helm rollback crisismesh <REVISION> -n crisismesh --wait
-```
+For the public application, use `vercel rollback` or promote a previously verified deployment.
+For a self-hosted Docker Compose stack, restore the previous immutable image tag and run
+`docker compose up -d`. Keep database migrations backwards-compatible with the previous release.
 
 Database migrations must be backwards-compatible for at least one application release.
 
 ## Disaster recovery exercise
 
-Quarterly: restore Postgres into an isolated namespace, replay a fixture event set, verify incident counts and allocations, then record actual recovery time and recovery-point loss.
-
+Quarterly: restore Postgres into an isolated Compose project, replay a fixture event set, verify incident counts and allocations, then record actual recovery time and recovery-point loss.
