@@ -105,6 +105,44 @@ def calibration_temperatures(
     return temperatures
 
 
+def roc_auc(labels: list[int], scores: list[float]) -> float:
+    positives = sum(labels)
+    negatives = len(labels) - positives
+    if positives == 0 or negatives == 0:
+        return 0.5
+    ranked = sorted(zip(scores, labels, strict=True), key=lambda item: item[0])
+    positive_rank_sum = sum(index for index, (_, label) in enumerate(ranked, start=1) if label)
+    return (positive_rank_sum - positives * (positives + 1) / 2) / (positives * negatives)
+
+
+def discrimination_metrics(
+    examples: list[TrainingExample],
+    hidden_weights: list[list[float]],
+    hidden_bias: list[float],
+    latent_weights: list[list[float]],
+    latent_bias: list[float],
+    output_weights: list[list[float]],
+    output_bias: list[float],
+    calibration: list[float],
+) -> list[float]:
+    labels = [[], [], []]
+    scores = [[], [], []]
+    for example in examples:
+        _, _, outputs = forward(
+            example,
+            hidden_weights,
+            hidden_bias,
+            latent_weights,
+            latent_bias,
+            output_weights,
+            output_bias,
+        )
+        for horizon in range(3):
+            labels[horizon].append(int(example.targets[horizon] >= 0.5))
+            scores[horizon].append(calibrated_probability(outputs[horizon], calibration[horizon]))
+    return [round(roc_auc(labels[index], scores[index]), 6) for index in range(3)]
+
+
 def train(examples: list[TrainingExample], *, epochs: int, seed: int) -> dict[str, object]:
     training, validation, test = chronological_split(examples)
     randomizer = random.Random(seed)
@@ -261,6 +299,16 @@ def train(examples: list[TrainingExample], *, epochs: int, seed: int) -> dict[st
                 calibration,
             ),
             "testBrier": brier(
+                test,
+                hidden_weights,
+                hidden_bias,
+                latent_weights,
+                latent_bias,
+                output_weights,
+                output_bias,
+                calibration,
+            ),
+            "testRocAuc": discrimination_metrics(
                 test,
                 hidden_weights,
                 hidden_bias,
