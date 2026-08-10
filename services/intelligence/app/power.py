@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
 
 from .features import EnvironmentalSignals
+from .providers import fetch_provider_json
 from .weather import TTLCache
 
 NASA_POWER_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
@@ -64,18 +63,7 @@ class NasaPowerClient:
 
 
 def _fetch_json(url: str) -> dict[str, Any]:
-    request = Request(
-        url,
-        headers={
-            "Accept": "application/json",
-            "User-Agent": "CrisisMesh/0.2 disaster-intelligence portfolio",
-        },
-    )
-    with urlopen(request, timeout=9.0) as response:  # noqa: S310
-        payload = json.load(response)
-    if not isinstance(payload, dict):
-        raise ValueError("NASA POWER returned a non-object response")
-    return payload
+    return fetch_provider_json(url, source="NASA POWER", timeout=9.0)
 
 
 def _mapping(value: object) -> dict[str, Any]:

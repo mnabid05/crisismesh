@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import json
 import threading
 import time
 from collections.abc import Callable
 from dataclasses import replace
 from typing import Any
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
 
 from .features import EnvironmentalSignals
+from .providers import fetch_provider_json
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_FIELDS = (
@@ -89,18 +88,7 @@ class OpenMeteoClient:
 
 
 def _fetch_json(url: str) -> dict[str, Any]:
-    request = Request(
-        url,
-        headers={
-            "Accept": "application/json",
-            "User-Agent": "CrisisMesh/0.2 disaster-intelligence portfolio",
-        },
-    )
-    with urlopen(request, timeout=6.0) as response:  # noqa: S310
-        payload = json.load(response)
-    if not isinstance(payload, dict):
-        raise ValueError("weather provider returned a non-object response")
-    return payload
+    return fetch_provider_json(url, source="Open-Meteo", timeout=6.0)
 
 
 def _mapping(value: object) -> dict[str, Any]:
