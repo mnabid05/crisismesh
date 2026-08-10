@@ -94,6 +94,6 @@ official authority.
 ## Delivery
 
 - [x] 72. Expand Python model, dataset, endpoint, and provider tests.
-- [x] 73. Run TypeScript, React, Go, workflow, container, and Helm quality gates.
+- [x] 73. Run TypeScript, React, Go, workflow, and container quality gates.
 - [x] 74. Verify desktop and mobile prediction flows in a real browser.
-- [ ] 75. Publish, pass GitHub CI, deploy, and smoke-test the public production release.
+- [x] 75. Publish, pass GitHub CI, deploy, and smoke-test the public production release.

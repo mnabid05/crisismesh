@@ -78,12 +78,12 @@ This is the intended next development sequence, not a script for manufacturing h
 
 58. `build: add hardened multi-stage containers`
 59. `build: compose PostGIS NATS and observability locally`
-60. `feat(helm): package stateless workloads and services`
-61. `feat(helm): add health probes and resource limits`
-62. `feat(helm): add horizontal autoscaling`
-63. `feat(helm): add disruption budgets`
-64. `security(helm): enforce non-root restricted containers`
-65. `security(helm): add default-deny network policy`
+60. `build(compose): add service health checks and persistent volumes`
+61. `ci: build every deployable service container`
+62. `ci: validate the Vercel Services manifest`
+63. `deploy: publish web and intelligence services`
+64. `security(containers): enforce non-root runtime users`
+65. `build: document immutable container rollback`
 66. `observability: expose API and intelligence metrics`
 67. `observability: add Grafana operations dashboard`
 68. `test(perf): add read-path SLO load profile`
@@ -92,18 +92,17 @@ This is the intended next development sequence, not a script for manufacturing h
 
 69. `security: add CodeQL and filesystem scanning`
 70. `release: publish provenance and SBOM-enabled images`
-71. `deploy: add protected atomic Helm workflow`
+71. `deploy: add verified Vercel production workflow`
 72. `docs: publish on-call and rollback runbook`
 73. `docs: publish system threat model`
-74. `test: run pod-failure recovery exercise`
+74. `test: run container-restart recovery exercise`
 75. `docs: publish benchmark results and demo narrative`
 
 ## Resume proof to collect
 
 - A public deployment or recorded incident replay.
-- CI run demonstrating all language and Helm checks.
+- CI run demonstrating language, container, and security checks.
 - k6 output with p50/p95/p99 and error rate.
 - Grafana screenshot during a controlled load test.
-- A short architecture decision explaining why Go, Python, PostGIS, NATS, and Kubernetes each solve a real constraint.
+- A short architecture decision explaining why Go, Python, PostGIS, NATS, Docker Compose, and Vercel each solve a real constraint.
 - An issue/PR trail showing tradeoffs, review, and iteration rather than commit-count optimization.
-

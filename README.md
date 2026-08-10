@@ -12,8 +12,8 @@ Real-time disaster intelligence, prediction, and response coordination. CrisisMe
 - Reproducible 21-input, three-horizon neural model trained on 18,500 NOAA and USGS records, with uncertainty ranges, feature-ablation explanations, chronological evaluation, and an explicit model card.
 - Interactive global operations workspace with worldwide incident selection, click-anywhere coordinate targets, great-circle staging distance, capacity tracking, infrastructure provenance, and revision-aware replanning.
 - Focused product navigation with source provenance, preparedness, safety disclosures, licensing, and project links collected in a compact trust footer.
-- Reproducible local deployment through Docker Compose and production-oriented Kubernetes packaging through Helm.
-- CI, CodeQL, Trivy, SBOM/provenance-enabled releases, atomic deployments, HPA, disruption budgets, and default-deny network policy.
+- Reproducible full-stack development through Docker Compose and public web/intelligence deployment through Vercel Services.
+- CI, CodeQL, Trivy, four-service container builds, and SBOM/provenance-enabled image releases.
 - Prometheus metrics, Grafana dashboard, health probes, structured logs, and a k6 load profile.
 
 ## Architecture
@@ -85,16 +85,12 @@ cd ../.. && corepack enable && pnpm install && pnpm --filter @crisismesh/web typ
 
 The full contract is in [OpenAPI](docs/openapi.yaml).
 
-## Production deployment
+## Deployment
 
-Supply managed PostgreSQL/PostGIS and NATS endpoints, then install the chart:
-
-```bash
-helm upgrade --install crisismesh deploy/helm/crisismesh \
-  --namespace crisismesh --create-namespace \
-  --set-string secrets.databaseUrl="$DATABASE_URL" \
-  --set-string secrets.apiKey="$CRISISMESH_API_KEY"
-```
+The public portfolio application uses Vercel Services: Next.js serves the command center and
+FastAPI serves the neural intelligence routes. The complete Go, Python, PostGIS, NATS, Prometheus,
+and Grafana stack runs locally with Docker Compose. Tagged releases also publish the four service
+images to GitHub Container Registry for straightforward self-hosting.
 
 See the [operations runbook](docs/runbook.md), [threat model](docs/threat-model.md), and [delivery roadmap](docs/commit-roadmap.md).
 
@@ -106,8 +102,8 @@ The public web and neural services deployment flow is documented in the [Vercel 
 - Under 300 ms read-path p95 at 25 concurrent virtual users.
 - Under 15 seconds from accepted source event to connected operator display.
 - Allocation explanations for every suggested asset; no autonomous dispatch.
-- Successful rolling deployment with zero unavailable API pods.
-- Recovery from a killed API pod without losing persisted incidents.
+- Successful Vercel health and prediction smoke tests after each production release.
+- Recovery from a restarted API container without losing Postgres-backed incidents.
 
 ## License
 

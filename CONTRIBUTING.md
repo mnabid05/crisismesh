@@ -13,8 +13,7 @@
 
 - [ ] Unit/contract tests cover behavior changes.
 - [ ] Public API changes update `docs/openapi.yaml`.
-- [ ] New configuration is documented in `.env.example` and Helm values.
+- [ ] New configuration is documented in `.env.example` and the relevant deployment guide.
 - [ ] Logs and screenshots contain no credentials or personal data.
 - [ ] UI changes work at 375 px and 1440 px widths.
 - [ ] Operational and safety failure modes are described.
-

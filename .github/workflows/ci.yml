@@ -87,15 +87,3 @@ jobs:
           push: false
           cache-from: type=gha,scope=ci-${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=ci-${{ matrix.service }}
-
-  helm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
-      - run: helm lint deploy/helm/crisismesh --set secrets.databaseUrl=postgres://test --set secrets.apiKey=test
-      - run: helm template test deploy/helm/crisismesh --set secrets.databaseUrl=postgres://test --set secrets.apiKey=test > rendered.yaml
-      - uses: yokawasa/action-setup-kube-tools@v0.11.2
-        with:
-          kubeconform: "0.6.7"
-      - run: kubeconform -strict -summary -ignore-missing-schemas rendered.yaml

@@ -33,4 +33,4 @@ Provider calls use bounded timeouts. A failed provider is reported as delayed an
 
 ## Rollback
 
-Use `vercel rollback` for the most recent production deployment or `vercel rollback <deployment-url>` for a specific artifact. Kubernetes deployments remain independent and continue to use the Helm rollback procedure in the main runbook.
+Use `vercel rollback` for the most recent production deployment or `vercel rollback <deployment-url>` for a specific artifact. Tagged container releases remain available in GitHub Container Registry for self-hosted rollback.
