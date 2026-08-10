@@ -24,15 +24,17 @@ type Incident struct {
 }
 
 type Resource struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	Kind         string   `json:"kind"`
-	Status       string   `json:"status"`
-	Quantity     int      `json:"quantity"`
-	Available    int      `json:"available"`
-	Latitude     float64  `json:"latitude"`
-	Longitude    float64  `json:"longitude"`
-	Capabilities []string `json:"capabilities"`
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	Kind           string   `json:"kind"`
+	Status         string   `json:"status"`
+	Quantity       int      `json:"quantity"`
+	Available      int      `json:"available"`
+	Latitude       float64  `json:"latitude"`
+	Longitude      float64  `json:"longitude"`
+	Capabilities   []string `json:"capabilities"`
+	DemandCategory string   `json:"demandCategory,omitempty"`
+	Unit           string   `json:"unit,omitempty"`
 }
 
 type AllocationRequest struct {
