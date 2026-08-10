@@ -27,7 +27,7 @@ def health() -> dict[str, str]:
     return {
         "status": "ok",
         "service": "crisismesh-intelligence",
-        "modelVersion": INTELLIGENCE.model.version,
+        "modelVersion": INTELLIGENCE.prediction_model.version,
     }
 
 
@@ -39,6 +39,43 @@ def model_metadata() -> dict[str, object]:
         "features": INTELLIGENCE.model.feature_names,
         "trainingData": "synthetic hazard-response scenarios",
         "decisionAuthority": False,
+    }
+
+
+@app.get("/v2/model")
+def prediction_model_metadata() -> dict[str, object]:
+    artifact = INTELLIGENCE.prediction_model.artifact
+    return {
+        "version": INTELLIGENCE.prediction_model.version,
+        "kind": artifact["kind"],
+        "features": INTELLIGENCE.prediction_model.feature_names,
+        "horizons": INTELLIGENCE.prediction_model.horizons,
+        "metrics": artifact["metrics"],
+        "training": artifact["training"],
+        "decisionAuthority": False,
+    }
+
+
+@app.get("/v2/providers/health")
+def provider_health() -> dict[str, object]:
+    return {
+        "providers": [
+            {
+                "name": "Open-Meteo",
+                "role": "forecast context",
+                "status": "configured",
+                "timeoutSeconds": 6,
+                "cacheTtlSeconds": 600,
+            },
+            {
+                "name": "NASA POWER",
+                "role": "recent climate context",
+                "status": "configured",
+                "timeoutSeconds": 9,
+                "cacheTtlSeconds": 21600,
+            },
+        ],
+        "note": "Configured means available to the service; each prediction reports request failures independently.",
     }
 
 
@@ -65,6 +102,28 @@ async def neural_score(payload: dict[str, Any]) -> dict[str, Any]:
                 }
             )
         return await asyncio.to_thread(INTELLIGENCE.score, incident, environment)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/v2/predictions")
+async def predict_escalation(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        incident_payload = payload.get("incident", payload)
+        if not isinstance(incident_payload, dict):
+            raise ValueError("incident must be a JSON object")
+        incident = Incident.from_dict(incident_payload)
+        environment_payload = payload.get("environment")
+        environment = None
+        if isinstance(environment_payload, dict):
+            environment = EnvironmentalSignals(
+                **{
+                    key: value
+                    for key, value in environment_payload.items()
+                    if key in ENVIRONMENT_FIELDS
+                }
+            )
+        return await asyncio.to_thread(INTELLIGENCE.predict, incident, environment)
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
