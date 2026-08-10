@@ -83,6 +83,16 @@ export interface SourceHealth {
   lagSeconds: number;
 }
 
+export interface InfrastructureStatus {
+  id: string;
+  name: string;
+  kind: "power" | "transport" | "communications" | "water";
+  status: "operational" | "monitoring" | "impaired" | "offline";
+  detail: string;
+  source: string;
+  updatedAt: string;
+}
+
 export interface Summary {
   activeIncidents: number;
   criticalIncidents: number;
@@ -115,4 +125,5 @@ export interface DashboardData {
   connected: boolean;
   streaming: boolean;
   dataMode: DataMode;
+  infrastructure: InfrastructureStatus[];
 }

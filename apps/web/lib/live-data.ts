@@ -288,6 +288,7 @@ export async function getLiveFusionData(): Promise<DashboardData | null> {
     connected: true,
     streaming: false,
     dataMode: "live-fusion",
+    infrastructure: fallbackData.infrastructure,
     incidents: fused,
     resources,
     summary: {
