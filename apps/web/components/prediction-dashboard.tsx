@@ -1,99 +1,94 @@
 import Link from "next/link";
 
-import type { DashboardData, Incident, PredictionHorizon } from "@/lib/types";
+import { intelligenceFor } from "@/lib/demand";
+import type { DashboardData } from "@/lib/types";
 
 function percent(value: number) {
   return `${Math.round(value * 100)}%`;
 }
 
-function horizonData(incident: Incident): PredictionHorizon[] {
-  return incident.intelligence?.horizons ?? [
-    { hours: 6, probability: Math.max(0.03, incident.riskScore / 130), lower: 0.02, upper: Math.min(1, incident.riskScore / 100), level: "baseline" },
-    { hours: 24, probability: incident.riskScore / 100, lower: Math.max(0, incident.riskScore / 100 - 0.18), upper: Math.min(1, incident.riskScore / 100 + 0.18), level: "baseline" },
-    { hours: 72, probability: Math.min(0.98, incident.riskScore / 100 + 0.08), lower: Math.max(0, incident.riskScore / 100 - 0.12), upper: Math.min(1, incident.riskScore / 100 + 0.2), level: "baseline" },
-  ];
-}
-
-function PredictionChart({ horizons }: { horizons: PredictionHorizon[] }) {
-  const x = [36, 170, 304];
-  const y = (value: number) => 148 - value * 112;
-  const points = horizons.map((item, index) => `${x[index]},${y(item.probability)}`).join(" ");
-  const band = [
-    ...horizons.map((item, index) => `${x[index]},${y(item.upper)}`),
-    ...horizons.slice().reverse().map((item, reverseIndex) => `${x[2 - reverseIndex]},${y(item.lower)}`),
-  ].join(" ");
-  return (
-    <div className="forecast-chart">
-      <div className="chart-title"><span>Escalation trajectory</span><small>Shaded area = uncertainty</small></div>
-      <svg viewBox="0 0 340 180" role="img" aria-label="Escalation probability across 6, 24, and 72 hours">
-        {[0.25, 0.5, 0.75].map((value) => <line key={value} x1="30" x2="320" y1={y(value)} y2={y(value)} className="grid-line" />)}
-        <polygon points={band} className="uncertainty-band" />
-        <polyline points={points} className="trajectory-line" />
-        {horizons.map((item, index) => <circle key={item.hours} cx={x[index]} cy={y(item.probability)} r="5" />)}
-        {horizons.map((item, index) => <text key={item.hours} x={x[index]} y="172" textAnchor="middle">{item.hours}h</text>)}
-      </svg>
-    </div>
-  );
+function compact(value: number) {
+  return new Intl.NumberFormat("en-US", { notation: value >= 10_000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(value);
 }
 
 export function PredictionDashboard({ data }: { data: DashboardData }) {
   const incidents = data.incidents.slice().sort((a, b) => {
-    const modelCoverage = Number(Boolean(b.intelligence)) - Number(Boolean(a.intelligence));
+    const modelCoverage = Number(b.intelligence?.modelVersion.startsWith("neural-demand"))
+      - Number(a.intelligence?.modelVersion.startsWith("neural-demand"));
     return modelCoverage || b.riskScore - a.riskScore;
   });
   const focus = incidents[0];
   if (!focus) return <main className="page-shell"><div className="empty-state">No incidents are currently available.</div></main>;
-  const horizons = horizonData(focus);
+  const intelligence = intelligenceFor(focus, data.resources);
+  const demand = intelligence.demand ?? [];
+  const shortages = intelligence.shortages ?? [];
+  const leadingSignals = intelligence.topSignals.length > 0
+    ? intelligence.topSignals.slice(0, 5)
+    : [
+        { feature: "affected_population", impact: focus.affectedPopulation / 10_000, direction: "raises" as const },
+        { feature: `${focus.kind}_response_profile`, impact: focus.riskScore / 10, direction: "raises" as const },
+      ];
+
   return (
     <main className="page-shell">
       <section className="hero-grid">
         <div className="hero-copy">
-          <span className="eyebrow">Live multi-source intelligence</span>
-          <h1>See how an active incident may escalate—before response windows close.</h1>
-          <p>CrisisMesh fuses official event feeds with environmental context, then estimates operational escalation at 6, 24, and 72 hours.</p>
-          <div className="hero-actions"><Link className="button primary" href="#forecast">View forecast</Link><Link className="button secondary" href="/resources">Preparedness resources</Link></div>
+          <span className="eyebrow">Immediate-response intelligence</span>
+          <h1>Estimate what responders need in the next six hours.</h1>
+          <p>CrisisMesh converts official incident and weather signals into one immediate demand window, identifies inventory gaps, and feeds those priorities into resource staging.</p>
+          <div className="hero-actions"><Link className="button primary" href="#demand">Open demand plan</Link><Link className="button secondary" href="/operations">Stage resources</Link></div>
         </div>
-        <div className="system-card">
-          <span className={`status-dot ${data.connected ? "online" : "fallback"}`}>{data.connected ? "Live providers connected" : "Fallback scenario"}</span>
-          <strong>{data.summary.activeIncidents}</strong><small>active signals monitored</small>
-          <div><span>{data.summary.sources.length} providers</span><span>Updated {new Date(data.summary.generatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" })} UTC</span></div>
+        <div className="system-card demand-window-card">
+          <span className={`status-dot ${data.connected ? "online" : "fallback"}`}>{data.connected ? "Live providers connected" : "Scenario fallback active"}</span>
+          <strong>6h</strong><small>single immediate-response window</small>
+          <div><span>{data.summary.activeIncidents} active signals</span><span>{intelligence.modelVersion}</span></div>
         </div>
       </section>
 
-      <section className="forecast-section" id="forecast">
-        <div className="section-lead"><div><span className="eyebrow">Priority forecast</span><h2>{focus.title}</h2><p>{focus.regions.join(" · ")} · observed by {focus.source}</p></div><a href={focus.sourceUrl ?? "#"} target="_blank" rel="noreferrer">Open official source ↗</a></div>
+      <section className="forecast-section" id="demand">
+        <div className="section-lead"><div><span className="eyebrow">Priority demand plan</span><h2>{focus.title}</h2><p>{focus.regions.join(" · ")} · observed by {focus.source}</p></div><a href={focus.sourceUrl ?? "#"} target="_blank" rel="noreferrer">Open official source ↗</a></div>
         <div className="prediction-layout">
           <div className="forecast-main">
-            <div className="horizon-grid">
-              {horizons.map((item) => (
-                <article className="horizon-card" key={item.hours}>
-                  <span>{item.hours} hour outlook</span><strong>{percent(item.probability)}</strong>
-                  <p>{item.level} escalation likelihood</p><small>{percent(item.lower)}–{percent(item.upper)} estimated range</small>
-                </article>
-              ))}
+            <div className="demand-summary">
+              <div><span>Six-hour demand index</span><strong>{intelligence.demandIndex ?? Math.round(intelligence.probability * 100)}</strong><small>{intelligence.demandLevel ?? "estimated"} operational pressure</small></div>
+              <p>Quantities combine modeled pressure, affected population, and a disclosed factor for each resource category.</p>
             </div>
-            <PredictionChart horizons={horizons} />
+            <div className="demand-grid">
+              {demand.map((item) => {
+                const gap = shortages.find((shortage) => shortage.category === item.category);
+                return (
+                  <article className="demand-card" key={item.category}>
+                    <div><span>{item.label}</span><i style={{ width: percent(item.pressure) }} /></div>
+                    <strong>{compact(item.quantity)}</strong><small>{item.unit} estimated</small>
+                    <p>{compact(item.lower)}–{compact(item.upper)} range · {percent(item.pressure)} pressure</p>
+                    {gap?.shortfall != null ? <em className={`gap-label ${gap.urgency}`}>{compact(gap.shortfall)} {item.unit} gap</em> : null}
+                  </article>
+                );
+              })}
+            </div>
           </div>
           <aside className="forecast-context">
             <span className="eyebrow">What drives this</span>
             <h3>Leading signals</h3>
             <div className="signal-list">
-              {(focus.intelligence?.topSignals ?? []).slice(0, 5).map((signal) => (
+              {leadingSignals.map((signal) => (
                 <div key={signal.feature}><span>{signal.feature.replaceAll("_", " ")}</span><strong className={signal.direction}>{signal.impact > 0 ? "+" : ""}{signal.impact.toFixed(1)}</strong></div>
               ))}
             </div>
-            <div className="confidence-note"><strong>{focus.intelligence?.confidenceLabel ?? `${Math.round(focus.confidence * 100)}% input confidence`}</strong><p>{focus.intelligence?.trajectory ? `${focus.intelligence.trajectory} trajectory · ` : ""}{focus.intelligence?.providerCoverage ? `${focus.intelligence.providerCoverage.available}/${focus.intelligence.providerCoverage.expected} context providers available.` : "Uncertainty widens when source coverage falls."}</p></div>
+            <div className="confidence-note"><strong>{intelligence.confidenceLabel ?? `${Math.round(focus.confidence * 100)}% input confidence`}</strong><p>{intelligence.providerCoverage ? `${intelligence.providerCoverage.available}/${intelligence.providerCoverage.expected} context providers available.` : "Uncertainty widens when source coverage falls."}</p></div>
+            <Link className="context-link" href="/operations">Open shortage-aware staging →</Link>
           </aside>
         </div>
-        <p className="safety-note"><strong>Decision support, not a warning.</strong> {focus.intelligence?.disclaimer ?? "These estimates are experimental and must not replace instructions from public authorities."}</p>
+        <p className="safety-note"><strong>Planning estimate, not a dispatch order.</strong> {intelligence.disclaimer}</p>
       </section>
 
       <section className="overview-section">
-        <div className="section-lead"><div><span className="eyebrow">Active watchlist</span><h2>Highest-priority incidents</h2></div><Link href="/incidents">View all incidents →</Link></div>
+        <div className="section-lead"><div><span className="eyebrow">Active watchlist</span><h2>Highest immediate demand</h2></div><Link href="/incidents">View all incidents →</Link></div>
         <div className="watchlist">
-          {incidents.slice(0, 5).map((incident) => (
-            <article key={incident.id}><span className={`severity ${incident.severity}`}>{incident.severity}</span><div><strong>{incident.title}</strong><p>{incident.source} · {incident.regions[0]}</p></div><div className="watch-score"><strong>{incident.riskScore}</strong><small>24h index</small></div></article>
-          ))}
+          {incidents.slice(0, 5).map((incident) => {
+            const incidentIntelligence = intelligenceFor(incident, data.resources);
+            return <article key={incident.id}><span className={`severity ${incident.severity}`}>{incident.severity}</span><div><strong>{incident.title}</strong><p>{incident.source} · {incident.regions[0]}</p></div><div className="watch-score"><strong>{incidentIntelligence.demandIndex ?? incident.riskScore}</strong><small>6h demand</small></div></article>;
+          })}
         </div>
       </section>
     </main>
