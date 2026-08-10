@@ -75,7 +75,10 @@ def provider_health() -> dict[str, object]:
                 "cacheTtlSeconds": 21600,
             },
         ],
-        "note": "Configured means available to the service; each prediction reports request failures independently.",
+        "note": (
+            "Configured means available to the service; each prediction reports "
+            "request failures independently."
+        ),
     }
 
 
