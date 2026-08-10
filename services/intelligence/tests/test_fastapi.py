@@ -18,6 +18,15 @@ class FastApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["modelVersion"], "neural-demand-v3.0.0")
 
+    def test_vercel_service_prefix_reaches_same_api(self) -> None:
+        health = self.client.get("/intelligence/healthz")
+        model = self.client.get("/intelligence/v3/model")
+
+        self.assertEqual(health.status_code, 200)
+        self.assertEqual(health.json()["modelVersion"], "neural-demand-v3.0.0")
+        self.assertEqual(model.status_code, 200)
+        self.assertEqual(model.json()["windowHours"], 6)
+
     def test_neural_score_accepts_environment_override(self) -> None:
         response = self.client.post(
             "/v1/neural/score",

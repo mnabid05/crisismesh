@@ -4,7 +4,7 @@ import asyncio
 from dataclasses import fields
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 
 from .allocation import allocate
 from .features import EnvironmentalSignals
@@ -20,6 +20,18 @@ app = FastAPI(
 )
 INTELLIGENCE = NeuralIntelligenceService()
 ENVIRONMENT_FIELDS = {field.name for field in fields(EnvironmentalSignals)}
+SERVICE_PREFIX = "/intelligence"
+
+
+@app.middleware("http")
+async def normalize_service_prefix(request: Request, call_next: Any) -> Any:
+    """Accept the public Vercel service prefix without changing local API paths."""
+    path = request.scope.get("path", "")
+    if path == SERVICE_PREFIX or path.startswith(f"{SERVICE_PREFIX}/"):
+        normalized_path = path[len(SERVICE_PREFIX) :] or "/"
+        request.scope["path"] = normalized_path
+        request.scope["raw_path"] = normalized_path.encode()
+    return await call_next(request)
 
 
 @app.get("/healthz")
