@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CrisisMesh Operations API
-  version: 0.1.0
+  version: 0.3.0
   description: Normalized disaster incidents, response resources, and explainable allocations.
 servers:
   - url: http://localhost:8080
@@ -43,7 +43,9 @@ paths:
     get:
       operationId: listResources
       responses:
-        "200": { description: Resource inventory }
+        "200":
+          description: Unit-aware resource inventory
+          content: { application/json: { schema: { $ref: "#/components/schemas/ResourceList" } } }
   /api/v1/allocations:
     get:
       operationId: listAllocations
@@ -101,4 +103,26 @@ components:
       properties:
         data: { type: array, items: { $ref: "#/components/schemas/Incident" } }
         count: { type: integer }
-
+    Resource:
+      type: object
+      required: [id, name, kind, status, quantity, available, latitude, longitude, capabilities]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        kind: { type: string }
+        status: { type: string, enum: [ready, partial, deployed, offline] }
+        quantity: { type: integer, minimum: 0 }
+        available: { type: integer, minimum: 0 }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        capabilities: { type: array, items: { type: string } }
+        demandCategory:
+          type: string
+          enum: [shelter_beds, medical_teams, rescue_teams, water_liters, meals, transport_seats]
+        unit: { type: string }
+    ResourceList:
+      type: object
+      required: [data, count]
+      properties:
+        data: { type: array, items: { $ref: "#/components/schemas/Resource" } }
+        count: { type: integer }

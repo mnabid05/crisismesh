@@ -189,9 +189,12 @@ func seedIncidents(now time.Time) []domain.Incident {
 
 func seedResources() []domain.Resource {
 	return []domain.Resource{
-		{ID: "res-usar-01", Name: "Urban Search & Rescue 01", Kind: "rescue", Status: "ready", Quantity: 42, Available: 32, Latitude: 33.75, Longitude: -84.39, Capabilities: []string{"medical", "swift-water", "structural"}},
-		{ID: "res-med-07", Name: "Mobile Medical Unit 07", Kind: "medical", Status: "ready", Quantity: 18, Available: 12, Latitude: 30.27, Longitude: -97.74, Capabilities: []string{"triage", "critical-care"}},
-		{ID: "res-air-03", Name: "Aviation Wing 03", Kind: "aviation", Status: "partial", Quantity: 8, Available: 5, Latitude: 32.9, Longitude: -80.0, Capabilities: []string{"evacuation", "reconnaissance", "cargo"}},
-		{ID: "res-shelter-12", Name: "Shelter Support 12", Kind: "shelter", Status: "ready", Quantity: 600, Available: 480, Latitude: 28.54, Longitude: -81.38, Capabilities: []string{"cots", "meals", "accessibility"}},
+		{ID: "res-usar-01", Name: "Urban Search & Rescue 01", Kind: "rescue", Status: "ready", Quantity: 42, Available: 32, Latitude: 33.75, Longitude: -84.39, Capabilities: []string{"medical", "swift-water", "structural"}, DemandCategory: "rescue_teams", Unit: "teams"},
+		{ID: "res-med-07", Name: "Mobile Medical Unit 07", Kind: "medical", Status: "ready", Quantity: 18, Available: 12, Latitude: 30.27, Longitude: -97.74, Capabilities: []string{"triage", "critical-care"}, DemandCategory: "medical_teams", Unit: "teams"},
+		{ID: "res-air-03", Name: "Regional Evacuation Fleet", Kind: "transport", Status: "partial", Quantity: 640, Available: 420, Latitude: 32.9, Longitude: -80.0, Capabilities: []string{"evacuation", "accessible-transport", "cargo"}, DemandCategory: "transport_seats", Unit: "seats"},
+		{ID: "res-shelter-12", Name: "Shelter Support 12", Kind: "shelter", Status: "ready", Quantity: 600, Available: 480, Latitude: 28.54, Longitude: -81.38, Capabilities: []string{"cots", "meals", "accessibility"}, DemandCategory: "shelter_beds", Unit: "beds"},
+		{ID: "res-volunteer-04", Name: "Community Volunteer Network", Kind: "volunteer", Status: "ready", Quantity: 230, Available: 186, Latitude: 29.76, Longitude: -95.37, Capabilities: []string{"wellness-checks", "distribution", "translation"}, Unit: "people"},
+		{ID: "res-supply-09", Name: "Regional Meal Cache 09", Kind: "supplies", Status: "ready", Quantity: 150000, Available: 112000, Latitude: 35.22, Longitude: -80.84, Capabilities: []string{"meals", "distribution"}, DemandCategory: "meals", Unit: "meals"},
+		{ID: "res-water-05", Name: "Potable Water Cache 05", Kind: "supplies", Status: "ready", Quantity: 180000, Available: 126000, Latitude: 34.75, Longitude: -92.29, Capabilities: []string{"water", "distribution"}, DemandCategory: "water_liters", Unit: "liters"},
 	}
 }

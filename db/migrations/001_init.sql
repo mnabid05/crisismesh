@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS resources (
   available integer NOT NULL CHECK (available BETWEEN 0 AND quantity),
   location geography(Point,4326) NOT NULL,
   capabilities text[] NOT NULL DEFAULT '{}',
+  demand_category text NOT NULL DEFAULT '',
+  unit text NOT NULL DEFAULT 'units',
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -53,11 +55,14 @@ CREATE TABLE IF NOT EXISTS allocations (
 
 CREATE INDEX IF NOT EXISTS allocations_incident_idx ON allocations(incident_id, created_at DESC);
 
-INSERT INTO resources (id,name,kind,status,quantity,available,location,capabilities) VALUES
-('res-usar-01','Urban Search & Rescue 01','rescue','ready',42,32,ST_SetSRID(ST_MakePoint(-84.39,33.75),4326)::geography,ARRAY['medical','swift-water','structural']),
-('res-med-07','Mobile Medical Unit 07','medical','ready',18,12,ST_SetSRID(ST_MakePoint(-97.74,30.27),4326)::geography,ARRAY['triage','critical-care','medical']),
-('res-air-03','Aviation Wing 03','aviation','partial',8,5,ST_SetSRID(ST_MakePoint(-80.0,32.9),4326)::geography,ARRAY['evacuation','reconnaissance','cargo']),
-('res-shelter-12','Shelter Support 12','shelter','ready',600,480,ST_SetSRID(ST_MakePoint(-81.38,28.54),4326)::geography,ARRAY['cots','meals','accessibility','shelter'])
+INSERT INTO resources (id,name,kind,status,quantity,available,location,capabilities,demand_category,unit) VALUES
+('res-usar-01','Urban Search & Rescue 01','rescue','ready',42,32,ST_SetSRID(ST_MakePoint(-84.39,33.75),4326)::geography,ARRAY['medical','swift-water','structural'],'rescue_teams','teams'),
+('res-med-07','Mobile Medical Unit 07','medical','ready',18,12,ST_SetSRID(ST_MakePoint(-97.74,30.27),4326)::geography,ARRAY['triage','critical-care','medical'],'medical_teams','teams'),
+('res-air-03','Regional Evacuation Fleet','transport','partial',640,420,ST_SetSRID(ST_MakePoint(-80.0,32.9),4326)::geography,ARRAY['evacuation','accessible-transport','cargo'],'transport_seats','seats'),
+('res-shelter-12','Shelter Support 12','shelter','ready',600,480,ST_SetSRID(ST_MakePoint(-81.38,28.54),4326)::geography,ARRAY['cots','meals','accessibility','shelter'],'shelter_beds','beds'),
+('res-volunteer-04','Community Volunteer Network','volunteer','ready',230,186,ST_SetSRID(ST_MakePoint(-95.37,29.76),4326)::geography,ARRAY['wellness-checks','distribution','translation'],'','people'),
+('res-supply-09','Regional Meal Cache 09','supplies','ready',150000,112000,ST_SetSRID(ST_MakePoint(-80.84,35.22),4326)::geography,ARRAY['meals','distribution'],'meals','meals'),
+('res-water-05','Potable Water Cache 05','supplies','ready',180000,126000,ST_SetSRID(ST_MakePoint(-92.29,34.75),4326)::geography,ARRAY['water','distribution'],'water_liters','liters')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO incidents (id,title,kind,severity,status,source,description,location,started_at,updated_at,risk_score,confidence,affected_population,regions) VALUES
@@ -66,4 +71,3 @@ INSERT INTO incidents (id,title,kind,severity,status,source,description,location
 ('cm-gulf-22','Flash flood emergency','flood','high','active','NOAA / NWS','Training thunderstorms producing life-threatening flash flooding.',ST_SetSRID(ST_MakePoint(-95.4,29.8),4326)::geography,now()-interval '4 hours',now()-interval '1 minute',84,.96,73000,ARRAY['Harris County']),
 ('cm-sierra-03','M4.8 regional earthquake','earthquake','moderate','monitoring','USGS','Shallow earthquake with light-to-moderate reported shaking.',ST_SetSRID(ST_MakePoint(-118.8,37.5),4326)::geography,now()-interval '2 hours',now()-interval '11 minutes',53,.99,12800,ARRAY['Mono County'])
 ON CONFLICT (id) DO NOTHING;
-

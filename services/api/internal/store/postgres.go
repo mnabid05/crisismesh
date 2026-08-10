@@ -99,7 +99,8 @@ func (p *Postgres) UpsertIncident(ctx context.Context, item domain.Incident) err
 
 func (p *Postgres) ListResources(ctx context.Context) ([]domain.Resource, error) {
 	rows, err := p.pool.Query(ctx, `SELECT id, name, kind, status, quantity, available,
-		ST_Y(location::geometry), ST_X(location::geometry), capabilities FROM resources ORDER BY name`)
+		ST_Y(location::geometry), ST_X(location::geometry), capabilities, demand_category, unit
+		FROM resources ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +109,8 @@ func (p *Postgres) ListResources(ctx context.Context) ([]domain.Resource, error)
 	for rows.Next() {
 		var item domain.Resource
 		if err := rows.Scan(&item.ID, &item.Name, &item.Kind, &item.Status, &item.Quantity,
-			&item.Available, &item.Latitude, &item.Longitude, &item.Capabilities); err != nil {
+			&item.Available, &item.Latitude, &item.Longitude, &item.Capabilities,
+			&item.DemandCategory, &item.Unit); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
