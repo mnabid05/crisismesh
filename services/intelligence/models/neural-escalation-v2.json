@@ -24,6 +24,14 @@
     "provider_significance",
     "provider_alert"
   ],
+  "normalization": {
+    "strategy": "bounded-domain-scaling",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "contract": "app.features and app.prediction_features"
+  },
   "horizons": [
     6,
     24,

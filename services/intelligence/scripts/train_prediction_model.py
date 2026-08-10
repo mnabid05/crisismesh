@@ -121,6 +121,11 @@ def train(examples: list[TrainingExample], *, epochs: int, seed: int) -> dict[st
         "version": "neural-escalation-v2.0.0",
         "kind": "multi-output-feed-forward-neural-network",
         "features": list(PREDICTION_FEATURE_NAMES),
+        "normalization": {
+            "strategy": "bounded-domain-scaling",
+            "range": [0.0, 1.0],
+            "contract": "app.features and app.prediction_features",
+        },
         "horizons": [6, 24, 72],
         "hiddenWeights": hidden_weights,
         "hiddenBias": hidden_bias,
