@@ -91,6 +91,7 @@ class FastApiTests(unittest.TestCase):
         self.assertEqual([item["hours"] for item in body["horizons"]], [6, 24, 72])
         self.assertIn(body["trajectory"], {"rising", "steady"})
         self.assertEqual(body["confidenceLabel"], "strong coverage")
+        self.assertEqual(body["providerCoverage"]["ratio"], 1.0)
         self.assertLessEqual(
             body["horizons"][0]["probability"], body["horizons"][2]["probability"]
         )

@@ -97,6 +97,11 @@ class NeuralIntelligenceService:
         provider_coverage = int(environment.forecast_source != "unavailable") + int(
             environment.climate_source != "unavailable"
         )
+        available_providers = [
+            source
+            for source in (environment.forecast_source, environment.climate_source)
+            if source != "unavailable"
+        ]
         confidence = min(0.98, incident.confidence * 0.72 + provider_coverage * 0.1)
         horizons = self.prediction_model.predict(features, confidence=confidence)
         adjustment = capped_environmental_adjustment(incident.kind, environment)
@@ -127,6 +132,13 @@ class NeuralIntelligenceService:
             "environment": asdict(environment),
             "sourceErrors": errors,
             "environmentalAdjustment": round(adjustment, 4),
+            "providerCoverage": {
+                "available": len(available_providers),
+                "expected": 2,
+                "ratio": round(len(available_providers) / 2, 2),
+                "sources": available_providers,
+                "missing": [error["source"] for error in errors],
+            },
             "provenance": {
                 "training": ["NOAA Storm Events 2025", "USGS Earthquake Catalog 2025"],
                 "runtime": [environment.forecast_source, environment.climate_source],
