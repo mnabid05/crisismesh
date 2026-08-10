@@ -48,6 +48,7 @@ def brier(
     latent_bias: list[float],
     output_weights: list[list[float]],
     output_bias: list[float],
+    calibration: list[float] | None = None,
 ) -> list[float]:
     scores = [0.0, 0.0, 0.0]
     for example in examples:
@@ -61,8 +62,47 @@ def brier(
             output_bias,
         )
         for index, (prediction, target) in enumerate(zip(outputs, example.targets, strict=True)):
+            if calibration is not None:
+                prediction = calibrated_probability(prediction, calibration[index])
             scores[index] += (prediction - target) ** 2
     return [round(value / max(1, len(examples)), 6) for value in scores]
+
+
+def calibrated_probability(probability: float, temperature: float) -> float:
+    bounded = min(1.0 - 1e-6, max(1e-6, probability))
+    return sigmoid(math.log(bounded / (1.0 - bounded)) / temperature)
+
+
+def calibration_temperatures(
+    validation: list[TrainingExample],
+    hidden_weights: list[list[float]],
+    hidden_bias: list[float],
+    latent_weights: list[list[float]],
+    latent_bias: list[float],
+    output_weights: list[list[float]],
+    output_bias: list[float],
+) -> list[float]:
+    candidates = [0.65, 0.75, 0.85, 1.0, 1.15, 1.3, 1.5]
+    temperatures: list[float] = []
+    for horizon in range(3):
+        best = (float("inf"), 1.0)
+        for candidate in candidates:
+            score = 0.0
+            for example in validation:
+                _, _, outputs = forward(
+                    example,
+                    hidden_weights,
+                    hidden_bias,
+                    latent_weights,
+                    latent_bias,
+                    output_weights,
+                    output_bias,
+                )
+                prediction = calibrated_probability(outputs[horizon], candidate)
+                score += (prediction - example.targets[horizon]) ** 2
+            best = min(best, (score, candidate))
+        temperatures.append(best[1])
+    return temperatures
 
 
 def train(examples: list[TrainingExample], *, epochs: int, seed: int) -> dict[str, object]:
@@ -183,6 +223,15 @@ def train(examples: list[TrainingExample], *, epochs: int, seed: int) -> dict[st
         output_weights,
         output_bias,
     ) = best
+    calibration = calibration_temperatures(
+        validation,
+        hidden_weights,
+        hidden_bias,
+        latent_weights,
+        latent_bias,
+        output_weights,
+        output_bias,
+    )
     return {
         "version": "neural-escalation-v2.0.0",
         "kind": "multi-output-feed-forward-neural-network",
@@ -199,7 +248,7 @@ def train(examples: list[TrainingExample], *, epochs: int, seed: int) -> dict[st
         "latentBias": latent_bias,
         "outputWeights": output_weights,
         "outputBias": output_bias,
-        "calibration": [1.0, 1.0, 1.0],
+        "calibration": calibration,
         "metrics": {
             "validationBrier": brier(
                 validation,
@@ -209,6 +258,7 @@ def train(examples: list[TrainingExample], *, epochs: int, seed: int) -> dict[st
                 latent_bias,
                 output_weights,
                 output_bias,
+                calibration,
             ),
             "testBrier": brier(
                 test,
@@ -218,6 +268,7 @@ def train(examples: list[TrainingExample], *, epochs: int, seed: int) -> dict[st
                 latent_bias,
                 output_weights,
                 output_bias,
+                calibration,
             ),
             "split": {"train": len(training), "validation": len(validation), "test": len(test)},
         },
