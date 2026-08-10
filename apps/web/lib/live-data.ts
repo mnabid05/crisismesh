@@ -62,6 +62,9 @@ interface PredictionResponse extends NeuralInsight {
   confidence: number;
   horizons: NonNullable<NeuralInsight["horizons"]>;
   provenance: NonNullable<NeuralInsight["provenance"]>;
+  trajectory: NonNullable<NeuralInsight["trajectory"]>;
+  confidenceLabel: string;
+  providerCoverage: NonNullable<NeuralInsight["providerCoverage"]>;
 }
 
 async function fetchJSON<T>(url: string, headers: HeadersInit = {}): Promise<T> {
@@ -252,6 +255,9 @@ async function addNeuralScore(incident: Incident): Promise<Incident> {
         horizons: neural.horizons,
         target: neural.target,
         provenance: neural.provenance,
+        trajectory: neural.trajectory,
+        confidenceLabel: neural.confidenceLabel,
+        providerCoverage: neural.providerCoverage,
       },
     };
   } catch {
@@ -260,11 +266,24 @@ async function addNeuralScore(incident: Incident): Promise<Incident> {
 }
 
 function sourceHealth(name: string, result: PromiseSettledResult<Incident[]>): SourceHealth {
+  if (result.status === "rejected") {
+    return { name, status: "unavailable", lastSync: new Date().toISOString(), lagSeconds: 300 };
+  }
+  const newest = result.value.reduce(
+    (latest, incident) => Math.max(latest, Date.parse(incident.updatedAt) || 0),
+    0,
+  );
+  const lagSeconds = newest ? Math.max(0, Math.round((Date.now() - newest) / 1000)) : 86_400;
+  const status = result.value.length === 0 || lagSeconds > 86_400
+    ? "stale"
+    : lagSeconds > 600
+      ? "delayed"
+      : "healthy";
   return {
     name,
-    status: result.status === "fulfilled" ? "healthy" : "delayed",
+    status,
     lastSync: new Date().toISOString(),
-    lagSeconds: result.status === "fulfilled" ? 0 : 300,
+    lagSeconds,
   };
 }
 

@@ -30,6 +30,10 @@ class EscalationModel:
             tuple(float(value) for value in row) for row in artifact["hiddenWeights"]
         )
         self.hidden_bias = tuple(float(value) for value in artifact["hiddenBias"])
+        self.latent_weights = tuple(
+            tuple(float(value) for value in row) for row in artifact["latentWeights"]
+        )
+        self.latent_bias = tuple(float(value) for value in artifact["latentBias"])
         self.output_weights = tuple(
             tuple(float(value) for value in row) for row in artifact["outputWeights"]
         )
@@ -39,8 +43,12 @@ class EscalationModel:
             raise ValueError("hidden layer dimensions do not match")
         if any(len(row) != len(self.feature_names) for row in self.hidden_weights):
             raise ValueError("feature contract does not match hidden layer")
+        if len(self.latent_weights) != len(self.latent_bias) or any(
+            len(row) != len(self.hidden_bias) for row in self.latent_weights
+        ):
+            raise ValueError("latent layer dimensions do not match")
         if len(self.output_weights) != len(self.horizons) or any(
-            len(row) != len(self.hidden_bias) for row in self.output_weights
+            len(row) != len(self.latent_bias) for row in self.output_weights
         ):
             raise ValueError("output layer dimensions do not match")
 
@@ -97,9 +105,15 @@ class EscalationModel:
             math.tanh(sum(weight * value for weight, value in zip(row, values, strict=True)) + bias)
             for row, bias in zip(self.hidden_weights, self.hidden_bias, strict=True)
         )
+        latent = tuple(
+            math.tanh(
+                sum(weight * value for weight, value in zip(row, hidden, strict=True)) + bias
+            )
+            for row, bias in zip(self.latent_weights, self.latent_bias, strict=True)
+        )
         return tuple(
             _sigmoid(
-                (sum(weight * value for weight, value in zip(row, hidden, strict=True)) + bias)
+                (sum(weight * value for weight, value in zip(row, latent, strict=True)) + bias)
                 / max(0.25, temperature)
             )
             for row, bias, temperature in zip(

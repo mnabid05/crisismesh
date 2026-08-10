@@ -82,7 +82,7 @@ export function PredictionDashboard({ data }: { data: DashboardData }) {
                 <div key={signal.feature}><span>{signal.feature.replaceAll("_", " ")}</span><strong className={signal.direction}>{signal.impact > 0 ? "+" : ""}{signal.impact.toFixed(1)}</strong></div>
               ))}
             </div>
-            <div className="confidence-note"><strong>{Math.round(focus.confidence * 100)}% input confidence</strong><p>Uncertainty widens when source coverage or input confidence falls.</p></div>
+            <div className="confidence-note"><strong>{focus.intelligence?.confidenceLabel ?? `${Math.round(focus.confidence * 100)}% input confidence`}</strong><p>{focus.intelligence?.trajectory ? `${focus.intelligence.trajectory} trajectory · ` : ""}{focus.intelligence?.providerCoverage ? `${focus.intelligence.providerCoverage.available}/${focus.intelligence.providerCoverage.expected} context providers available.` : "Uncertainty widens when source coverage falls."}</p></div>
           </aside>
         </div>
         <p className="safety-note"><strong>Decision support, not a warning.</strong> {focus.intelligence?.disclaimer ?? "These estimates are experimental and must not replace instructions from public authorities."}</p>

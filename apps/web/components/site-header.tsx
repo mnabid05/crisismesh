@@ -4,9 +4,6 @@ const navigation = [
   ["Predictions", "/"],
   ["Operations", "/operations"],
   ["Incidents", "/incidents"],
-  ["Sources", "/sources"],
-  ["Preparedness", "/resources"],
-  ["Model card", "/model"],
 ] as const;
 
 export function SiteHeader() {
@@ -19,7 +16,7 @@ export function SiteHeader() {
       <nav aria-label="Primary navigation">
         {navigation.map(([label, href]) => <Link href={href} key={href}>{label}</Link>)}
       </nav>
-      <a className="header-action" href="https://www.ready.gov/" target="_blank" rel="noreferrer">Get prepared ↗</a>
+      <Link className="header-action" href="/operations">Open live map →</Link>
     </header>
   );
 }

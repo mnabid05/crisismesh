@@ -3,7 +3,9 @@ from __future__ import annotations
 import unittest
 
 from app.training_data import (
+    TrainingExample,
     chronological_split,
+    deduplicate_examples,
     noaa_hazard,
     outcome_targets,
     parse_damage,
@@ -12,7 +14,27 @@ from app.training_data import (
 )
 
 
+def _example(occurred_at: str, event_id: str) -> TrainingExample:
+    return TrainingExample(
+        source="provider",
+        event_id=event_id,
+        occurred_at=occurred_at,
+        hazard="storm",
+        features=(0.0,) * 21,
+        targets=(0.03, 0.04, 0.05),
+    )
+
+
 class TrainingDataTests(unittest.TestCase):
+    def test_provider_event_ids_are_deduplicated(self) -> None:
+        example = _example("2025-01-01T00:00:00+00:00", "same")
+        later = _example("2025-01-01T01:00:00+00:00", "same")
+
+        result = deduplicate_examples([example, later])
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].occurred_at, later.occurred_at)
+
     def test_damage_suffixes_are_normalized(self) -> None:
         self.assertEqual(parse_damage("12.5K"), 12_500)
         self.assertEqual(parse_damage("2M"), 2_000_000)

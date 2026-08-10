@@ -10,7 +10,8 @@ Real-time disaster intelligence, prediction, and response coordination. CrisisMe
 - Live external integrations with normalization, deduplication, timeouts, and source-aware fallbacks.
 - PostGIS spatial persistence, NATS event distribution, Server-Sent Events, and a capacity-aware allocation engine.
 - Reproducible 21-input, three-horizon neural model trained on 18,500 NOAA and USGS records, with uncertainty ranges, feature-ablation explanations, chronological evaluation, and an explicit model card.
-- Interactive operations workspace with live incident selection, capacity tracking, infrastructure provenance, staging recommendations, and revision-aware replanning.
+- Interactive global operations workspace with worldwide incident selection, click-anywhere coordinate targets, great-circle staging distance, capacity tracking, infrastructure provenance, and revision-aware replanning.
+- Focused product navigation with source provenance, preparedness, safety disclosures, licensing, and project links collected in a compact trust footer.
 - Reproducible local deployment through Docker Compose and production-oriented Kubernetes packaging through Helm.
 - CI, CodeQL, Trivy, SBOM/provenance-enabled releases, atomic deployments, HPA, disruption budgets, and default-deny network policy.
 - Prometheus metrics, Grafana dashboard, health probes, structured logs, and a k6 load profile.

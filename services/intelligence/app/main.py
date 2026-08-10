@@ -49,6 +49,7 @@ def prediction_model_metadata() -> dict[str, object]:
         "version": INTELLIGENCE.prediction_model.version,
         "kind": artifact["kind"],
         "features": INTELLIGENCE.prediction_model.feature_names,
+        "normalization": artifact["normalization"],
         "horizons": INTELLIGENCE.prediction_model.horizons,
         "metrics": artifact["metrics"],
         "training": artifact["training"],
